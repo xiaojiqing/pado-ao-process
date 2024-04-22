@@ -4,7 +4,7 @@ Handlers.add(
   "register",
   Handlers.utils.hasMatchingTag("Action", "Register"),
   function (msg)
-    Nodes[msg.Name] = Nodes[msg.Publickey] or {}
+    Nodes[msg.Name] = Nodes[msg.Name] or {}
     Nodes[msg.Name].name = msg.Name
     Nodes[msg.Name].publickey = msg.Publickey
     Nodes[msg.Name].desc = msg.Desc
