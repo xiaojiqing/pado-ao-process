@@ -58,6 +58,7 @@ Handlers.add(
     if msg.Desc ~= nil then
       Nodes[msg.Name].desc = msg.Desc
     end
+    Handlers.utils.reply("updated")(msg)
   end
 )
 
