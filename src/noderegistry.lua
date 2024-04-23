@@ -1,7 +1,7 @@
 Nodes = Nodes or {}
 
 function get_node_key(msg)
-  return msg.From .. "-" .. msg.Name
+  return msg.Name
 end
 
 Handlers.add(
