@@ -6,7 +6,7 @@ Handlers.add(
   function (msg)
     Nodes[msg.Name] = Nodes[msg.Name] or {}
     Nodes[msg.Name].name = msg.Name
-    Nodes[msg.Name].publickey = msg.Publickey
+    Nodes[msg.Name].publickey = msg.Data
     Nodes[msg.Name].desc = msg.Desc
     Nodes[msg.Name].from = msg.From
     Handlers.utils.reply("registered")(msg)
