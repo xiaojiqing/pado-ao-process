@@ -8,7 +8,7 @@ Handlers.add(
     AllData[msg.Id].id = msg.Id
     AllData[msg.Id].dataTag = msg.DataTag
     AllData[msg.Id].price = msg.Price
-    AllData[msg.Id].encSks = msg.EncSks
+    AllData[msg.Id].encSks = msg.Data
     AllData[msg.Id].nonce = msg.Nonce
     AllData[msg.Id].encMsg = msg.EncMsg
     AllData[msg.Id].from = msg.From

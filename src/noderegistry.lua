@@ -13,8 +13,8 @@ Handlers.add(
       return
     end
 
-    if msg.Publickey == nil then
-      Handlers.utils.reply("Publickey is required")(msg)
+    if msg.Data == nil then
+      Handlers.utils.reply("Data is required")(msg)
       return
     end
 
@@ -31,7 +31,7 @@ Handlers.add(
     end
     Nodes[node_key] = {}
     Nodes[node_key].name = msg.Name
-    Nodes[node_key].publickey = msg.Publickey
+    Nodes[node_key].publickey = msg.Data
     Nodes[node_key].desc = msg.Desc
     Nodes[node_key].from = msg.From
     Handlers.utils.reply("register " .. msg.Name .. " by " .. msg.From)(msg)
@@ -59,8 +59,8 @@ Handlers.add(
       return
     end
 
-    if msg.Publickey ~= nil then
-      Nodes[node_key].publickey = msg.Publickey
+    if msg.Data ~= nil then
+      Nodes[node_key].publickey = msg.Data
     end
 
     if msg.Desc ~= nil then
