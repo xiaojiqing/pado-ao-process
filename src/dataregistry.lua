@@ -1,11 +1,11 @@
 AllData = AllData or {}
 
-function get_data_key(msg)
+function get_initial_data_key(msg)
   return msg.Id
 end
 
-function get_data_delete_key(msg)
-  return msg.DeleteId
+function get_existing_data_key(msg)
+  return msg.DataId
 end
 
 Handlers.add(
@@ -32,7 +32,7 @@ Handlers.add(
       return
     end
 
-    local data_key = get_data_key(msg)
+    local data_key = get_initial_data_key(msg)
     if AllData[data_key] ~= nil then
       Handlers.utils.reply("already registered")(msg)
       return
@@ -51,15 +51,36 @@ Handlers.add(
 )
 
 Handlers.add(
-  "delete",
-  Handlers.utils.hasMatchingTag("Action", "Delete"),
+  "getDataById",
+  Handlers.utils.hasMatchingTag("Action", "GetDataById"),
   function (msg)
-    if msg.DeleteId == nil then
-      Handlers.utils.reply("DeleteId is required")(msg)
+    if msg.DataId == nil then
+      Handlers.utils.reply("DataId is required")(msg)
       return
     end
 
-    local data_key = get_data_delete_key(msg)
+    local data_key = get_existing_data_key(msg)
+    if AllData[data_key] == nil then
+      Handlers.utils.reply("can not data by " .. data_key)(msg)
+      return
+    end
+
+    local data = AllData[data_key]
+    local encoded_data = require("json").encode(data)
+    Handlers.utils.reply(encoded_data)(msg)
+  end
+)
+
+Handlers.add(
+  "delete",
+  Handlers.utils.hasMatchingTag("Action", "Delete"),
+  function (msg)
+    if msg.DataId == nil then
+      Handlers.utils.reply("DataId is required")(msg)
+      return
+    end
+
+    local data_key = get_existing_data_key(msg)
     if AllData[data_key] == nil then
       Handlers.utils.reply("record " .. data_key .. " not exist")(msg)
       return
