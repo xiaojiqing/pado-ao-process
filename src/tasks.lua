@@ -1,5 +1,6 @@
-AllTasks = AllTasks or {}
+CompletedTasks = CompletedTasks or {}
 PendingTasks = Tasks or {}
+Results = Results or {}
 
 Handlers.add(
   "submit",
@@ -23,6 +24,7 @@ Handlers.add(
   end
 )
 
+-- msg.TaskId, msg.Result
 Handlers.add(
   "reportResult",
   Handlers.utils.hasMatchingTag("Action", "ReportResult"),
