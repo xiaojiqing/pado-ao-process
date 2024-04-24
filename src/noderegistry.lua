@@ -107,3 +107,24 @@ Handlers.add(
     Send({ Target = msg.From, Data = require('json').encode(nodes) }) 
   end
 )
+
+Handlers.add(
+  "GetNodeByName",
+  Handlers.utils.hasMatchingTag("Action", "GetNodeByName"),
+  function (msg)
+    if msg.Name == nil then
+      Handlers.utils.reply("Name is required")(msg)
+      return
+    end
+
+    local node_key = get_node_key(msg)
+    if Nodes[node_key] == nil then
+      Handlers.utils.reply("record " .. msg.Name .. " not exist")(msg)
+      return
+    end
+
+    local node = Nodes[node_key]
+    local encoded_node = require("json").encode(node)
+    Handlers.utils.reply(encoded_node)(msg)
+  end
+)
