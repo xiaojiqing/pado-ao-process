@@ -77,14 +77,14 @@ Handlers.add(
       return
     end
 
-    if msg.Result == nil then
-      Handlers.utils.reply("Result is required")(msg)
+    if msg.Data == nil then
+      Handlers.utils.reply("Data is required")(msg)
       return
     end
 
     local task_key = get_existing_task_key(msg)
     CompletedTasks[task_key] = PendingTasks[task_key]
-    CompletedTasks[task_key].result = msg.Result
+    CompletedTasks[task_key].result = msg.Data
     PendingTasks[task_key] = nil
     Handlers.utils.reply(task_key)(msg)
   end
