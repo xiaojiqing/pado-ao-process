@@ -31,12 +31,13 @@ Handlers.add(
     CompletedTasks[msg.TaskId] = PendingTasks[msg.TaskId]
     CompletedTasks[msg.TaskId].result = msg.Result
     PendingTasks[msg.TaskId] = nil
+    Handlers.utils.reply(msg.TaskId)(msg)
   end
 )
 
 Handlers.add(
   "getCompletedTasksById",
-  Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
+  Handlers.utils.hasMatchingTag("Action", "GetCompletedTasksById"),
   function (msg)
     
   end
@@ -44,7 +45,7 @@ Handlers.add(
 
 Handlers.add(
   "getCompletedTasks",
-  Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
+  Handlers.utils.hasMatchingTag("Action", "GetCompletedTasks"),
   function (msg)
     
   end
@@ -52,7 +53,7 @@ Handlers.add(
 
 Handlers.add(
   "getAllTasks",
-  Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
+  Handlers.utils.hasMatchingTag("Action", "GetAllTasks"),
   function (msg)
     
   end
