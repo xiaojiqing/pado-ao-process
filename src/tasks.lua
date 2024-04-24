@@ -30,6 +30,7 @@ Handlers.add(
   function (msg)
     CompletedTasks[msg.TaskId] = PendingTasks[msg.TaskId]
     CompletedTasks[msg.TaskId].result = msg.Result
+    PendingTasks[msg.TaskId] = nil
   end
 )
 
