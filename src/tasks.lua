@@ -9,12 +9,26 @@ function get_existing_task_key(msg)
   return msg.TaskId
 end
 
+function get_task_list(tasks)
+  local result = {}
+  for _, task in pairs(tasks) do
+    table.insert(result, task)
+  end
+  return result
+end
+
+function get_encoded_task_list(tasks)
+  local task_list = get_task_list(tasks)
+  local encoded_list = require("json").encode(task_list)
+  return encoded_list
+end
+
 Handlers.add(
   "submit",
   Handlers.utils.hasMatchingTag("Action", "Submit"),
   function (msg)
-    if msg.Type == nil then
-      Handlers.utils.reply("Type is required")(msg)
+    if msg.TaskType == nil then
+      Handlers.utils.reply("TaskType is required")(msg)
       return
     end
 
@@ -47,7 +61,9 @@ Handlers.add(
   "getPendingTasks",
   Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
   function (msg)
-    Send({ Target = msg.From, Data = require('json').encode(PendingTasks) })
+    local encoded_tasks =  get_encoded_task_list(PendingTasks)
+
+    Handlers.utils.reply(encoded_tasks)(msg)
   end
 )
 
@@ -75,8 +91,8 @@ Handlers.add(
 )
 
 Handlers.add(
-  "getCompletedTasksById",
-  Handlers.utils.hasMatchingTag("Action", "GetCompletedTasksById"),
+  "getCompletedTaskById",
+  Handlers.utils.hasMatchingTag("Action", "GetCompletedTaskById"),
   function (msg)
     if msg.TaskId == nil then
       Handlers.utils.reply("TaskId is required")(msg)
@@ -85,7 +101,7 @@ Handlers.add(
 
     local task_key = get_existing_task_key(msg)
     local task = CompletedTasks[task_key]
-    local encode_task = "[]"
+    local encode_task = "{}"
     if task ~= nil then
       encoded_task = require("json").encode(task);
     end
@@ -98,8 +114,8 @@ Handlers.add(
   "getCompletedTasks",
   Handlers.utils.hasMatchingTag("Action", "GetCompletedTasks"),
   function (msg)
-    local tasks = require("json").encode(CompletedTasks);
-    Handlers.utils.reply(tasks)(msg)
+    local encoded_tasks = get_encoded_task_list(CompletedTasks) 
+    Handlers.utils.reply(encoded_tasks)(msg)
   end
 )
 
@@ -108,13 +124,8 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "GetAllTasks"),
   function (msg)
     local all_tasks = {}
-    if #PendingTasks > 0 then
-      all_tasks.pendingTasks = PendingTasks
-    end
-
-    if #CompletedTasks > 0 then
-      all_tasks.completedTasks = CompletedTasks
-    end
+    all_tasks.pendingTasks = get_task_list(PendingTasks)
+    all_tasks.completedTasks = get_task_list(CompletedTasks)
 
     local encoded_tasks = require("json").encode(all_tasks)
     Handlers.utils.reply(encoded_tasks)(msg)

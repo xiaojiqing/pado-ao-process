@@ -76,5 +76,14 @@ Handlers.add(
   end
 )
 
-Handlers.add('allData', Handlers.utils.hasMatchingTag('Action', 'AllData'),
-  function(msg) Send({ Target = msg.From, Data = require('json').encode(AllData) }) end)
+Handlers.add(
+  'allData',
+  Handlers.utils.hasMatchingTag('Action', 'AllData'),
+  function(msg)
+    local all_data = {}
+    for _, data in pairs(AllData) do
+      table.insert(all_data, data)
+    end
+    Send({ Target = msg.From, Data = require('json').encode(all_data) }) 
+  end
+)

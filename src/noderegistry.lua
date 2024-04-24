@@ -96,5 +96,14 @@ Handlers.add(
   end
 )
 
-Handlers.add('nodes', Handlers.utils.hasMatchingTag('Action', 'Nodes'),
-  function(msg) Send({ Target = msg.From, Data = require('json').encode(Nodes) }) end)
+Handlers.add(
+  'nodes',
+  Handlers.utils.hasMatchingTag('Action', 'Nodes'),
+  function(msg)
+    local nodes = {}
+    for _, node in pairs(Nodes) do
+      table.insert(nodes, node)
+    end
+    Send({ Target = msg.From, Data = require('json').encode(nodes) }) 
+  end
+)
