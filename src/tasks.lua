@@ -8,7 +8,7 @@ Handlers.add(
     PendingTasks[msg.Id] = {}
     PendingTasks[msg.Id].id = msg.Id
     PendingTasks[msg.Id].type = msg.Type
-    PendingTasks[msg.Id].inputData = msg.InputData
+    PendingTasks[msg.Id].inputData = msg.Data
     PendingTasks[msg.Id].computeLimit = msg.ComputeLimit
     PendingTasks[msg.Id].memoryLimit = msg.MemoryLimit
     Handlers.utils.reply(msg.Id)(msg)
