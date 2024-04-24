@@ -1,6 +1,5 @@
 CompletedTasks = CompletedTasks or {}
 PendingTasks = Tasks or {}
-Results = Results or {}
 
 Handlers.add(
   "submit",
@@ -20,7 +19,7 @@ Handlers.add(
   "getPendingTasks",
   Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
   function (msg)
-    
+    Send({ Target = msg.From, Data = require('json').encode(PendingTasks) })
   end
 )
 
@@ -28,6 +27,15 @@ Handlers.add(
 Handlers.add(
   "reportResult",
   Handlers.utils.hasMatchingTag("Action", "ReportResult"),
+  function (msg)
+    CompletedTasks[msg.TaskId] = PendingTasks[msg.TaskId]
+    CompletedTasks[msg.TaskId].result = msg.Result
+  end
+)
+
+Handlers.add(
+  "getCompletedTasksById",
+  Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
   function (msg)
     
   end
