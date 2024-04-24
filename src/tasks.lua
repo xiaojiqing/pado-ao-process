@@ -18,8 +18,8 @@ Handlers.add(
       return
     end
 
-    if msg.InputData == nil then
-      Handlers.utils.reply("InputData is required")(msg)
+    if msg.Data == nil then
+      Handlers.utils.reply("Data is required")(msg)
       return
     end
 
@@ -36,7 +36,7 @@ Handlers.add(
     PendingTasks[task_key] = {}
     PendingTasks[task_key].id = msg.Id
     PendingTasks[task_key].type = msg.TaskType
-    PendingTasks[task_key].inputData = msg.InputData
+    PendingTasks[task_key].inputData = msg.Data
     PendingTasks[task_key].computeLimit = msg.ComputeLimit
     PendingTasks[task_key].memoryLimit = msg.MemoryLimit
     Handlers.utils.reply(task_key)(msg)
