@@ -1,5 +1,5 @@
 CompletedTasks = CompletedTasks or {}
-PendingTasks = Tasks or {}
+PendingTasks = PendingTasks or {}
 
 function get_initial_task_key(msg)
   return msg.Id
