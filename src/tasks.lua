@@ -23,6 +23,22 @@ function get_encoded_task_list(tasks)
   return encoded_list
 end
 
+function convert_to_map(list)
+  local m = {}
+  for index, item in ipairs(list) do
+    m[item] = index
+  end
+  return m
+end
+
+function count(map)
+  local num = 0
+  for _, _ in pairs(map) do
+    num = num + 1
+  end
+  return num
+end
+
 Handlers.add(
   "submit",
   Handlers.utils.hasMatchingTag("Action", "Submit"),
@@ -46,6 +62,11 @@ Handlers.add(
       Handlers.utils.reply("MemoryLimit is required")(msg)
       return
     end
+    
+    if msg.ComputeNodes == nil then
+      Handlers.utils.reply("ComputeNodes is required")(msg)
+      return
+    end
     local task_key = get_initial_task_key(msg)
     PendingTasks[task_key] = {}
     PendingTasks[task_key].id = msg.Id
@@ -53,6 +74,10 @@ Handlers.add(
     PendingTasks[task_key].inputData = msg.Data
     PendingTasks[task_key].computeLimit = msg.ComputeLimit
     PendingTasks[task_key].memoryLimit = msg.MemoryLimit
+
+    local compute_node_list = require("json").decode(msg.ComputeNodes)
+    local compute_node_map = convert_to_map(compute_node_list)
+    PendingTasks[task_key].computeNodes = compute_node_map
     Handlers.utils.reply(task_key)(msg)
   end
 )
@@ -77,15 +102,35 @@ Handlers.add(
       return
     end
 
+    if msg.NodeName == nil then
+      Handlers.utils.reply("NodeName is required")(msg)
+      return
+    end
+
     if msg.Data == nil then
       Handlers.utils.reply("Data is required")(msg)
       return
     end
 
     local task_key = get_existing_task_key(msg)
-    CompletedTasks[task_key] = PendingTasks[task_key]
-    CompletedTasks[task_key].result = msg.Data
-    PendingTasks[task_key] = nil
+    local pendingTask = PendingTasks[task_key]
+    if pendingTask == nil then
+      Handiers.utils.reply("PendingTasks " .. task_key .. " not exist")
+      return
+    end
+
+    if pendingTask.computeNodes[msg.NodeName] == nil then
+      Handlers.utils.reply("NodeName not in ComputeNodes")(msg)
+      return
+    end
+    PendingTasks[task_key].result = PendingTasks[task_key].result or {}
+    PendingTasks[task_key].result[msg.NodeName] = msg.Data
+    PendingTasks[task_key].computeNodes[msg.NodeName] = nil
+    if count(PendingTasks[task_key].computeNodes) == 0 then
+      CompletedTasks[task_key] = PendingTasks[task_key]
+      CompletedTasks[task_key].computeNodes = nil
+      PendingTasks[task_key] = nil
+    end
     Handlers.utils.reply(task_key)(msg)
   end
 )
