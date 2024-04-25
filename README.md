@@ -99,7 +99,7 @@ The task has the following attributes:
   aos> Send({Target = <Task Manger ID>, Action = "ReportResult", TaskId = <TaskID>, NodeName = <NodeName>})
   ```
   
-  Get Pengding Tasks
+  Get Pending Tasks
   ```bash
   aos> Send({Target = <Task Manager ID>, Action = "GetPendingTasks"})
   ```
