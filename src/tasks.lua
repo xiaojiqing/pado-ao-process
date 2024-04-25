@@ -1,15 +1,15 @@
 CompletedTasks = CompletedTasks or {}
-PendingTasks = Tasks or {}
+PendingTasks = PendingTasks or {}
 
-function get_initial_task_key(msg)
+function GetInitialTaskKey(msg)
   return msg.Id
 end
 
-function get_existing_task_key(msg)
+function getExistingTaskKey(msg)
   return msg.TaskId
 end
 
-function get_task_list(tasks)
+function getTaskList(tasks)
   local result = {}
   for _, task in pairs(tasks) do
     table.insert(result, task)
@@ -17,10 +17,26 @@ function get_task_list(tasks)
   return result
 end
 
-function get_encoded_task_list(tasks)
-  local task_list = get_task_list(tasks)
-  local encoded_list = require("json").encode(task_list)
-  return encoded_list
+function getEncodedTaskList(tasks)
+  local taskList = getTaskList(tasks)
+  local encodedList = require("json").encode(taskList)
+  return encodedList
+end
+
+function convertToMap(list)
+  local m = {}
+  for index, item in ipairs(list) do
+    m[item] = index
+  end
+  return m
+end
+
+function count(map)
+  local num = 0
+  for _, _ in pairs(map) do
+    num = num + 1
+  end
+  return num
 end
 
 Handlers.add(
@@ -46,14 +62,23 @@ Handlers.add(
       Handlers.utils.reply("MemoryLimit is required")(msg)
       return
     end
-    local task_key = get_initial_task_key(msg)
-    PendingTasks[task_key] = {}
-    PendingTasks[task_key].id = msg.Id
-    PendingTasks[task_key].type = msg.TaskType
-    PendingTasks[task_key].inputData = msg.Data
-    PendingTasks[task_key].computeLimit = msg.ComputeLimit
-    PendingTasks[task_key].memoryLimit = msg.MemoryLimit
-    Handlers.utils.reply(task_key)(msg)
+    
+    if msg.ComputeNodes == nil then
+      Handlers.utils.reply("ComputeNodes is required")(msg)
+      return
+    end
+    local taskKey = GetInitialTaskKey(msg)
+    PendingTasks[taskKey] = {}
+    PendingTasks[taskKey].id = msg.Id
+    PendingTasks[taskKey].type = msg.TaskType
+    PendingTasks[taskKey].inputData = msg.Data
+    PendingTasks[taskKey].computeLimit = msg.ComputeLimit
+    PendingTasks[taskKey].memoryLimit = msg.MemoryLimit
+
+    local computeNodeList = require("json").decode(msg.ComputeNodes)
+    local computeNodeMap = convertToMap(computeNodeList)
+    PendingTasks[taskKey].computeNodes = computeNodeMap
+    Handlers.utils.reply(taskKey)(msg)
   end
 )
 
@@ -61,9 +86,9 @@ Handlers.add(
   "getPendingTasks",
   Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
   function (msg)
-    local encoded_tasks =  get_encoded_task_list(PendingTasks)
+    local encodedTasks =  getEncodedTaskList(PendingTasks)
 
-    Handlers.utils.reply(encoded_tasks)(msg)
+    Handlers.utils.reply(encodedTasks)(msg)
   end
 )
 
@@ -77,16 +102,36 @@ Handlers.add(
       return
     end
 
+    if msg.NodeName == nil then
+      Handlers.utils.reply("NodeName is required")(msg)
+      return
+    end
+
     if msg.Data == nil then
       Handlers.utils.reply("Data is required")(msg)
       return
     end
 
-    local task_key = get_existing_task_key(msg)
-    CompletedTasks[task_key] = PendingTasks[task_key]
-    CompletedTasks[task_key].result = msg.Data
-    PendingTasks[task_key] = nil
-    Handlers.utils.reply(task_key)(msg)
+    local taskKey = getExistingTaskKey(msg)
+    local pendingTask = PendingTasks[taskKey]
+    if pendingTask == nil then
+      Handiers.utils.reply("PendingTasks " .. taskKey .. " not exist")
+      return
+    end
+
+    if pendingTask.computeNodes[msg.NodeName] == nil then
+      Handlers.utils.reply("NodeName not in ComputeNodes")(msg)
+      return
+    end
+    PendingTasks[taskKey].result = PendingTasks[taskKey].result or {}
+    PendingTasks[taskKey].result[msg.NodeName] = msg.Data
+    PendingTasks[taskKey].computeNodes[msg.NodeName] = nil
+    if count(PendingTasks[taskKey].computeNodes) == 0 then
+      CompletedTasks[taskKey] = PendingTasks[taskKey]
+      CompletedTasks[taskKey].computeNodes = nil
+      PendingTasks[taskKey] = nil
+    end
+    Handlers.utils.reply(taskKey)(msg)
   end
 )
 
@@ -99,14 +144,14 @@ Handlers.add(
       return
     end
 
-    local task_key = get_existing_task_key(msg)
-    local task = CompletedTasks[task_key]
-    local encode_task = "{}"
+    local taskKey = getExistingTaskKey(msg)
+    local task = CompletedTasks[taskKey]
+    local encodedTask = "{}"
     if task ~= nil then
-      encoded_task = require("json").encode(task);
+      encodedTask = require("json").encode(task);
     end
 
-    Handlers.utils.reply(encoded_task)(msg)
+    Handlers.utils.reply(encodedTask)(msg)
   end
 )
 
@@ -114,8 +159,8 @@ Handlers.add(
   "getCompletedTasks",
   Handlers.utils.hasMatchingTag("Action", "GetCompletedTasks"),
   function (msg)
-    local encoded_tasks = get_encoded_task_list(CompletedTasks) 
-    Handlers.utils.reply(encoded_tasks)(msg)
+    local encodedTasks = getEncodedTaskList(CompletedTasks) 
+    Handlers.utils.reply(encodedTasks)(msg)
   end
 )
 
@@ -123,11 +168,11 @@ Handlers.add(
   "getAllTasks",
   Handlers.utils.hasMatchingTag("Action", "GetAllTasks"),
   function (msg)
-    local all_tasks = {}
-    all_tasks.pendingTasks = get_task_list(PendingTasks)
-    all_tasks.completedTasks = get_task_list(CompletedTasks)
+    local allTasks = {}
+    allTasks.pendingTasks = getTaskList(PendingTasks)
+    allTasks.completedTasks = getTaskList(CompletedTasks)
 
-    local encoded_tasks = require("json").encode(all_tasks)
-    Handlers.utils.reply(encoded_tasks)(msg)
+    local encodedTasks = require("json").encode(allTasks)
+    Handlers.utils.reply(encodedTasks)(msg)
   end
 )
