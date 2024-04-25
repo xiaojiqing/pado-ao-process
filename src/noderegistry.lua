@@ -71,7 +71,7 @@ Handlers.add(
 )
 
 Handlers.add(
-  "Delete",
+  "delete",
   Handlers.utils.hasMatchingTag("Action", "Delete"),
   function (msg)
     if msg.Name == nil then
@@ -109,7 +109,7 @@ Handlers.add(
 )
 
 Handlers.add(
-  "GetNodeByName",
+  "getNodeByName",
   Handlers.utils.hasMatchingTag("Action", "GetNodeByName"),
   function (msg)
     if msg.Name == nil then
