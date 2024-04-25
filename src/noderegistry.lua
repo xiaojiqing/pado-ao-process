@@ -1,6 +1,6 @@
 Nodes = Nodes or {}
 
-function get_node_key(msg)
+function getNodeKey(msg)
   return msg.Name
 end
 
@@ -23,17 +23,17 @@ Handlers.add(
       return
     end
 
-    local node_key = get_node_key(msg)
+    local nodeKey = getNodeKey(msg)
 
-    if Nodes[node_key] ~= nil then
+    if Nodes[nodeKey] ~= nil then
       Handlers.utils.reply("already register " .. msg.Name)(msg)
       return
     end
-    Nodes[node_key] = {}
-    Nodes[node_key].name = msg.Name
-    Nodes[node_key].publickey = msg.Data
-    Nodes[node_key].desc = msg.Desc
-    Nodes[node_key].from = msg.From
+    Nodes[nodeKey] = {}
+    Nodes[nodeKey].name = msg.Name
+    Nodes[nodeKey].publickey = msg.Data
+    Nodes[nodeKey].desc = msg.Desc
+    Nodes[nodeKey].from = msg.From
     Handlers.utils.reply("register " .. msg.Name .. " by " .. msg.From)(msg)
   end
 )
@@ -47,24 +47,24 @@ Handlers.add(
       return
     end
 
-    local node_key = get_node_key(msg)
+    local nodeKey = getNodeKey(msg)
 
-    if Nodes[node_key] == nil then
+    if Nodes[nodeKey] == nil then
       Handlers.utils.reply("record " .. msg.Name .. " not exist")(msg)
       return
     end
 
-    if Nodes[node_key].from ~= msg.From then
+    if Nodes[nodeKey].from ~= msg.From then
       Handlers.utils.reply("you are forbidden to update")(msg)
       return
     end
 
     if msg.Data ~= nil then
-      Nodes[node_key].publickey = msg.Data
+      Nodes[nodeKey].publickey = msg.Data
     end
 
     if msg.Desc ~= nil then
-      Nodes[node_key].desc = msg.Desc
+      Nodes[nodeKey].desc = msg.Desc
     end
     Handlers.utils.reply("update " .. msg.Name .. " by " .. msg.From)(msg)
   end
@@ -79,18 +79,18 @@ Handlers.add(
       return
     end
 
-    local node_key = get_node_key(msg)
+    local nodeKey = getNodeKey(msg)
 
-    if Nodes[node_key] == nil then
+    if Nodes[nodeKey] == nil then
       Handlers.utils.reply("record " .. msg.Name .. " not exist")(msg)
       return
     end
 
-    if Nodes[node_key].from ~= msg.From then
+    if Nodes[nodeKey].from ~= msg.From then
       Handlers.utils.reply("you are forbidden to delete")(msg)
       return
     end
-    Nodes[node_key] = nil
+    Nodes[nodeKey] = nil
 
     Handlers.utils.reply("delete " .. msg.Name .. " by " .. msg.From)(msg)
   end
@@ -117,14 +117,14 @@ Handlers.add(
       return
     end
 
-    local node_key = get_node_key(msg)
-    if Nodes[node_key] == nil then
+    local nodeKey = getNodeKey(msg)
+    if Nodes[nodeKey] == nil then
       Handlers.utils.reply("record " .. msg.Name .. " not exist")(msg)
       return
     end
 
-    local node = Nodes[node_key]
-    local encoded_node = require("json").encode(node)
-    Handlers.utils.reply(encoded_node)(msg)
+    local node = Nodes[nodeKey]
+    local encodedNode = require("json").encode(node)
+    Handlers.utils.reply(encodedNode)(msg)
   end
 )

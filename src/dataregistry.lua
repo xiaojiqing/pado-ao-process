@@ -1,10 +1,10 @@
 AllData = AllData or {}
 
-function get_initial_data_key(msg)
+function getInitialDataKey(msg)
   return msg.Id
 end
 
-function get_existing_data_key(msg)
+function getExistingDataKey(msg)
   return msg.DataId
 end
 
@@ -32,20 +32,20 @@ Handlers.add(
       return
     end
 
-    local data_key = get_initial_data_key(msg)
-    if AllData[data_key] ~= nil then
+    local dataKey = getInitialDataKey(msg)
+    if AllData[dataKey] ~= nil then
       Handlers.utils.reply("already registered")(msg)
       return
     end
 
-    AllData[data_key] = {}
-    AllData[data_key].id = msg.Id
-    AllData[data_key].dataTag = msg.DataTag
-    AllData[data_key].price = msg.Price
-    AllData[data_key].encSks = msg.Data
-    AllData[data_key].nonce = msg.Nonce
-    AllData[data_key].encMsg = msg.EncMsg
-    AllData[data_key].from = msg.From
+    AllData[dataKey] = {}
+    AllData[dataKey].id = msg.Id
+    AllData[dataKey].dataTag = msg.DataTag
+    AllData[dataKey].price = msg.Price
+    AllData[dataKey].encSks = msg.Data
+    AllData[dataKey].nonce = msg.Nonce
+    AllData[dataKey].encMsg = msg.EncMsg
+    AllData[dataKey].from = msg.From
     Handlers.utils.reply(msg.Id)(msg)
   end
 )
@@ -59,15 +59,15 @@ Handlers.add(
       return
     end
 
-    local data_key = get_existing_data_key(msg)
-    if AllData[data_key] == nil then
-      Handlers.utils.reply("can not data by " .. data_key)(msg)
+    local dataKey = getExistingDataKey(msg)
+    if AllData[dataKey] == nil then
+      Handlers.utils.reply("can not data by " .. dataKey)(msg)
       return
     end
 
-    local data = AllData[data_key]
-    local encoded_data = require("json").encode(data)
-    Handlers.utils.reply(encoded_data)(msg)
+    local data = AllData[dataKey]
+    local encodedData = require("json").encode(data)
+    Handlers.utils.reply(encodedData)(msg)
   end
 )
 
@@ -80,18 +80,18 @@ Handlers.add(
       return
     end
 
-    local data_key = get_existing_data_key(msg)
-    if AllData[data_key] == nil then
-      Handlers.utils.reply("record " .. data_key .. " not exist")(msg)
+    local dataKey = getExistingDataKey(msg)
+    if AllData[dataKey] == nil then
+      Handlers.utils.reply("record " .. dataKey .. " not exist")(msg)
       return
     end
 
-    if AllData[data_key].from ~= msg.From then
+    if AllData[dataKey].from ~= msg.From then
       Handlers.utils.reply("forbiden to delete")(msg)
       return
     end
 
-    AllData[data_key] = nil
+    AllData[dataKey] = nil
     Handlers.utils.reply("deleted")(msg)
 
   end
@@ -101,10 +101,10 @@ Handlers.add(
   'allData',
   Handlers.utils.hasMatchingTag('Action', 'AllData'),
   function(msg)
-    local all_data = {}
+    local allData = {}
     for _, data in pairs(AllData) do
-      table.insert(all_data, data)
+      table.insert(allData, data)
     end
-    Send({ Target = msg.From, Data = require('json').encode(all_data) }) 
+    Send({ Target = msg.From, Data = require('json').encode(allData) }) 
   end
 )
