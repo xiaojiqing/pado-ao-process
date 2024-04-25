@@ -4,13 +4,13 @@ This is PADO Network AO Processes.
 ## Node Register
 A node has the following attributes:
 - name
-  the name of the node
+  -- the name of the node
 - publicKey
-  the public key of the node
+  -- the public key of the node
 - desc
-  description of the node
+  -- description of the node
 - from
-  the process which register the node
+  -- the process which register the node
 
   Register a node:
   ```bash
@@ -40,19 +40,19 @@ A node has the following attributes:
 ## Data Register
 The data has the following attributes:
 - id
-  the identify of the data
+  -- the identify of the data
 - dataTag
-  the tag of the data
+  -- the tag of the data
 - price
-  the price of the data
+  -- the price of the data
 - encSks
-  the encrypted secret keys for the data  
+  -- the encrypted secret keys for the data  
 - nonce
-  the nonce for the data
+  -- the nonce for the data
 - encMsg
-  the ciphertext of the data
+  -- the ciphertext of the data
 - from
-  the process which upload the data
+  -- the process which upload the data
 
   Upload data:
   ```bash
