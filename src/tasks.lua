@@ -115,7 +115,7 @@ Handlers.add(
     local taskKey = getExistingTaskKey(msg)
     local pendingTask = PendingTasks[taskKey]
     if pendingTask == nil then
-      Handiers.utils.reply("PendingTasks " .. taskKey .. " not exist")
+      Handlers.utils.reply("PendingTask " .. taskKey .. " not exist")(msg)
       return
     end
 
@@ -146,10 +146,11 @@ Handlers.add(
 
     local taskKey = getExistingTaskKey(msg)
     local task = CompletedTasks[taskKey]
-    local encodedTask = "{}"
-    if task ~= nil then
-      encodedTask = require("json").encode(task);
+    if task == nil then
+      Handlers.utils.reply("CompletedTask " .. taskKey .. " not exist")(msg)
+      return
     end
+    local encodedTask = require("json").encode(task);
 
     Handlers.utils.reply(encodedTask)(msg)
   end
