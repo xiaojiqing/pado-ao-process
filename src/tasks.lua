@@ -1,6 +1,16 @@
 CompletedTasks = CompletedTasks or {}
 PendingTasks = PendingTasks or {}
 
+function replyError(request, errmsg)
+  local action = request.Action .. "-Error"
+  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Error = errmsg})
+end
+
+function replySuccess(request, data)
+  local action = request.Action .. "-Success"
+  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Data = data})
+end
+
 function GetInitialTaskKey(msg)
   return msg.Id
 end
@@ -44,27 +54,27 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "Submit"),
   function (msg)
     if msg.TaskType == nil then
-      Handlers.utils.reply("TaskType is required")(msg)
+      replyError(msg, "TaskType is required")
       return
     end
 
     if msg.Data == nil then
-      Handlers.utils.reply("Data is required")(msg)
+      replyError(msg, "Data is required")
       return
     end
 
     if msg.ComputeLimit == nil then
-      Handlers.utils.reply("ComputeLimit is required")(msg)
+      replyError(msg, "ComputeLimit is required")
       return
     end
 
     if msg.MemoryLimit == nil then
-      Handlers.utils.reply("MemoryLimit is required")(msg)
+      replyError(msg, "MemoryLimit is required")
       return
     end
     
     if msg.ComputeNodes == nil then
-      Handlers.utils.reply("ComputeNodes is required")(msg)
+      replyError(msg, "ComputeNodes is required")
       return
     end
     local taskKey = GetInitialTaskKey(msg)
@@ -78,7 +88,7 @@ Handlers.add(
     local computeNodeList = require("json").decode(msg.ComputeNodes)
     local computeNodeMap = convertToMap(computeNodeList)
     PendingTasks[taskKey].computeNodes = computeNodeMap
-    Handlers.utils.reply(taskKey)(msg)
+    replySuccess(msg, taskKey)
   end
 )
 
@@ -88,7 +98,7 @@ Handlers.add(
   function (msg)
     local encodedTasks =  getEncodedTaskList(PendingTasks)
 
-    Handlers.utils.reply(encodedTasks)(msg)
+    replySuccess(msg, encodedTasks)
   end
 )
 
@@ -98,29 +108,29 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "ReportResult"),
   function (msg)
     if msg.TaskId == nil then
-      Handlers.utils.reply("TaskId is required")(msg)
+      replyError(msg, "TaskId is required")
       return
     end
 
     if msg.NodeName == nil then
-      Handlers.utils.reply("NodeName is required")(msg)
+      replErrory(msg, "NodeName is required")
       return
     end
 
     if msg.Data == nil then
-      Handlers.utils.reply("Data is required")(msg)
+      replyError(msg, "Data is required")
       return
     end
 
     local taskKey = getExistingTaskKey(msg)
     local pendingTask = PendingTasks[taskKey]
     if pendingTask == nil then
-      Handiers.utils.reply("PendingTasks " .. taskKey .. " not exist")
+      replyError(msg, "PendingTask " .. taskKey .. " not exist")
       return
     end
 
     if pendingTask.computeNodes[msg.NodeName] == nil then
-      Handlers.utils.reply("NodeName not in ComputeNodes")(msg)
+      replyError(msg, "NodeName not in ComputeNodes")
       return
     end
     PendingTasks[taskKey].result = PendingTasks[taskKey].result or {}
@@ -131,7 +141,7 @@ Handlers.add(
       CompletedTasks[taskKey].computeNodes = nil
       PendingTasks[taskKey] = nil
     end
-    Handlers.utils.reply(taskKey)(msg)
+    replySuccess(msg, taskKey)
   end
 )
 
@@ -140,18 +150,19 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "GetCompletedTaskById"),
   function (msg)
     if msg.TaskId == nil then
-      Handlers.utils.reply("TaskId is required")(msg)
+      replyError(msg, "TaskId is required")
       return
     end
 
     local taskKey = getExistingTaskKey(msg)
     local task = CompletedTasks[taskKey]
-    local encodedTask = "{}"
-    if task ~= nil then
-      encodedTask = require("json").encode(task);
+    if task == nil then
+      replyError(msg, "CompletedTask " .. taskKey .. " not exist")
+      return
     end
+    local encodedTask = require("json").encode(task);
 
-    Handlers.utils.reply(encodedTask)(msg)
+    replySuccess(msg, encodedTask)
   end
 )
 
@@ -160,7 +171,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "GetCompletedTasks"),
   function (msg)
     local encodedTasks = getEncodedTaskList(CompletedTasks) 
-    Handlers.utils.reply(encodedTasks)(msg)
+    replySuccess(msg, encodedTasks)
   end
 )
 
@@ -173,6 +184,6 @@ Handlers.add(
     allTasks.completedTasks = getTaskList(CompletedTasks)
 
     local encodedTasks = require("json").encode(allTasks)
-    Handlers.utils.reply(encodedTasks)(msg)
+    replySuccess(msg, encodedTasks)
   end
 )
