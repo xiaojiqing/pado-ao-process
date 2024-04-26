@@ -1,5 +1,5 @@
-DataProcess = ""
-DataId = ""
+DataProcess = DataProcess or ""
+DataId = DataId or ""
 
 function setDataProcess(processId)
   DataProcess = processId

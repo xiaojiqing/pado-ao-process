@@ -1,4 +1,4 @@
-NodeProcess = ""
+NodeProcess = NodeProcess or ""
 
 function setNodeProcess(processId)
   NodeProcess = processId
