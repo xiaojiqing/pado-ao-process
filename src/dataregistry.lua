@@ -1,4 +1,14 @@
 AllData = AllData or {}
+function replyError(request, errmsg)
+  local action = request.Action .. "-Error"
+  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Error = errmsg})
+end
+
+function replySuccess(request, data)
+  local action = request.Action .. "-Success"
+  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Data = data})
+end
+
 
 function getInitialDataKey(msg)
   return msg.Id
@@ -13,28 +23,28 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "Register"),
   function (msg)
     if msg.DataTag == nil then
-      Handlers.utils.reply("DataTag is required")(msg)
+      replyError(msg, "DataTag is required")
       return
     end
 
     if msg.Price == nil then
-      Handlers.utils.reply("Price is required")(msg)
+      replyError(msg, "Price is required")
       return
     end
 
     if msg.Nonce == nil then
-      Handlers.utils.reply("Nonce is required")(msg)
+      replyError(msg, "Nonce is required")
       return
     end
 
     if msg.EncMsg == nil then
-      Handlers.utils.reply("EncMsg is required")(msg)
+      replyError(msg, "EncMsg is required")
       return
     end
 
     local dataKey = getInitialDataKey(msg)
     if AllData[dataKey] ~= nil then
-      Handlers.utils.reply("already registered")(msg)
+      replyError(msg, "already registered")
       return
     end
 
@@ -46,7 +56,7 @@ Handlers.add(
     AllData[dataKey].nonce = msg.Nonce
     AllData[dataKey].encMsg = msg.EncMsg
     AllData[dataKey].from = msg.From
-    Handlers.utils.reply(msg.Id)(msg)
+    replySuccess(msg, msg.Id)
   end
 )
 
@@ -55,19 +65,19 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "GetDataById"),
   function (msg)
     if msg.DataId == nil then
-      Handlers.utils.reply("DataId is required")(msg)
+      replyError(msg, "DataId is required")
       return
     end
 
     local dataKey = getExistingDataKey(msg)
     if AllData[dataKey] == nil then
-      Handlers.utils.reply("can not data by " .. dataKey)(msg)
+      replyError(msg, "can not data by " .. dataKey)
       return
     end
 
     local data = AllData[dataKey]
     local encodedData = require("json").encode(data)
-    Handlers.utils.reply(encodedData)(msg)
+    replySuccess(msg, encodedData)
   end
 )
 
@@ -76,23 +86,23 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "Delete"),
   function (msg)
     if msg.DataId == nil then
-      Handlers.utils.reply("DataId is required")(msg)
+      replyError(msg, "DataId is required")
       return
     end
 
     local dataKey = getExistingDataKey(msg)
     if AllData[dataKey] == nil then
-      Handlers.utils.reply("record " .. dataKey .. " not exist")(msg)
+      replyError(msg, "record " .. dataKey .. " not exist")
       return
     end
 
     if AllData[dataKey].from ~= msg.From then
-      Handlers.utils.reply("forbiden to delete")(msg)
+      replyError(msg, "forbiden to delete")
       return
     end
 
     AllData[dataKey] = nil
-    Handlers.utils.reply("deleted")(msg)
+    replySuccess(msg, "deleted")
 
   end
 )
@@ -105,6 +115,7 @@ Handlers.add(
     for _, data in pairs(AllData) do
       table.insert(allData, data)
     end
-    Send({ Target = msg.From, Data = require('json').encode(allData) }) 
+    local encoded_data = require('json').encode(allData)
+    replySuccess(msg, encoded_data)
   end
 )
