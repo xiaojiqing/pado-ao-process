@@ -84,10 +84,11 @@ Handlers.add(
     PendingTasks[taskKey].inputData = msg.Data
     PendingTasks[taskKey].computeLimit = msg.ComputeLimit
     PendingTasks[taskKey].memoryLimit = msg.MemoryLimit
+    PendingTasks[taskKey].computeNodes = msg.ComputeNodes
 
     local computeNodeList = require("json").decode(msg.ComputeNodes)
     local computeNodeMap = convertToMap(computeNodeList)
-    PendingTasks[taskKey].computeNodes = computeNodeMap
+    PendingTasks[taskKey].computeNodeMap = computeNodeMap
     replySuccess(msg, taskKey)
   end
 )
@@ -113,7 +114,7 @@ Handlers.add(
     end
 
     if msg.NodeName == nil then
-      replErrory(msg, "NodeName is required")
+      replyError(msg, "NodeName is required")
       return
     end
 
@@ -129,16 +130,16 @@ Handlers.add(
       return
     end
 
-    if pendingTask.computeNodes[msg.NodeName] == nil then
+    if pendingTask.computeNodeMap[msg.NodeName] == nil then
       replyError(msg, "NodeName not in ComputeNodes")
       return
     end
     PendingTasks[taskKey].result = PendingTasks[taskKey].result or {}
     PendingTasks[taskKey].result[msg.NodeName] = msg.Data
-    PendingTasks[taskKey].computeNodes[msg.NodeName] = nil
-    if count(PendingTasks[taskKey].computeNodes) == 0 then
+    PendingTasks[taskKey].computeNodeMap[msg.NodeName] = nil
+    if count(PendingTasks[taskKey].computeNodeMap) == 0 then
       CompletedTasks[taskKey] = PendingTasks[taskKey]
-      CompletedTasks[taskKey].computeNodes = nil
+      CompletedTasks[taskKey].computeNodeMap = nil
       PendingTasks[taskKey] = nil
     end
     replySuccess(msg, taskKey)
