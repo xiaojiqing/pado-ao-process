@@ -113,7 +113,7 @@ Handlers.add(
     end
 
     if msg.NodeName == nil then
-      replErrory(msg, "NodeName is required")
+      replyError(msg, "NodeName is required")
       return
     end
 
