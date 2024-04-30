@@ -128,3 +128,25 @@ Handlers.add(
     replySuccess(msg, encodedNode)
   end
 )
+
+Handlers.add(
+  "getComputeNodes",
+  Handlers.utils.hasMatchingTag("Action", "GetComputeNodes"),
+  function (msg)
+    local computeNodes = require("json").decode(msg.Tags.ComputeNodes)
+    local computeNodeMap = {}
+    for _, nodeName in ipairs(computeNodes) do
+      if Nodes[nodeName] == nil then
+        local errorMap = { userData = msg.Tags.UserData, errorMsg = "not found node: " .. nodeName }
+        local encodedError = require("json").encode(errorMap)
+        replyError(msg, encodedError)
+        return
+      end
+      computeNodeMap[nodeName] = Nodes[nodeName].from
+    end
+
+    local dataMap = { userData = msg.Tags.UserData, computeNodeMap = computeNodeMap }
+    local encodedData = require("json").encode(dataMap)
+    replySuccess(msg, encodedData)
+  end
+)

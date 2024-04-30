@@ -75,11 +75,47 @@ Handlers.add(
     PendingTasks[taskKey].computeLimit = msg.Tags.ComputeLimit
     PendingTasks[taskKey].memoryLimit = msg.Tags.MemoryLimit
     PendingTasks[taskKey].computeNodes = msg.Tags.ComputeNodes
+    PendingTasks[taskKey].computeNodesVerified = false
+    PendingTasks[taskKey].msg = msg
 
-    local computeNodeList = require("json").decode(msg.Tags.ComputeNodes)
-    local computeNodeMap = convertToMap(computeNodeList)
+    ao.send({Target = NODE_PROCESS_ID, Tags = {Action = "GetComputeNodes", ComputeNodes = msg.Tags.ComputeNodes, UserData = taskKey}}) 
+
+    --local computeNodeList = require("json").decode(msg.Tags.ComputeNodes)
+    --local computeNodeMap = convertToMap(computeNodeList)
+    --PendingTasks[taskKey].computeNodeMap = computeNodeMap
+    --PendingTasks[taskKey].verifyingNodes = computeNodeList
+
+    
+  end
+)
+
+Handlers.add(
+  "getComputeNodesSuccess",
+  Handlers.utils.hasMatchingTag("Action", "GetComputeNodes-Success"),
+  function (msg)
+    local dataMap = require("json").decode(msg.Data)
+    local taskKey = dataMap.userData
+    local computeNodeMap = dataMap.computeNodeMap
+    local originMsg = PendingTasks[taskKey].msg
     PendingTasks[taskKey].computeNodeMap = computeNodeMap
-    replySuccess(msg, taskKey)
+    PendingTasks[taskKey].computeNodesVerified = true
+    PendingTasks[taskKey].msg = nil
+
+    replySuccess(originMsg, taskKey)
+  end
+)
+
+Handlers.add(
+  "getComputeNodesError",
+  Handlers.utils.hasMatchingTag("Action", "GetComputeNodes-Error"),
+  function (msg)
+    local errorMap = require("json").decode(msg.Tags.Error)
+    local taskKey = errorMap.userData
+    local errorMsg = errorMap.errorMsg
+    local originMsg = PendingTasks[taskKey].msg
+    PendingTasks[taskKey] = nil
+
+    replySuccess(originMsg, "Verify compute nodes error: " .. errorMsg)
   end
 )
 
@@ -119,8 +155,12 @@ Handlers.add(
       return
     end
 
-    if pendingTask.computeNodeMap[msg.Tags.NodeName] == nil then
+    local requiredFrom = pendingTask.computeNodeMap[msg.Tags.NodeName]
+    if requiredFrom == nil then
       replyError(msg, "NodeName not in ComputeNodes")
+      return
+    elseif requiredFrom ~= msg.From then
+      replyError(msg, msg.Tags.NodeName .. " should reported by " .. requiredFrom)
       return
     end
     PendingTasks[taskKey].result = PendingTasks[taskKey].result or {}
