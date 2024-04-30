@@ -1,14 +1,4 @@
 Nodes = Nodes or {}
-function replyError(request, errmsg)
-  local action = request.Action .. "-Error"
-  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Error = errmsg})
-end
-
-function replySuccess(request, data)
-  local action = request.Action .. "-Success"
-  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Data = data})
-end
-
 function getNodeKey(msg)
   return msg.Tags.Name
 end

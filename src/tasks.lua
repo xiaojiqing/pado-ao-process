@@ -1,16 +1,6 @@
 CompletedTasks = CompletedTasks or {}
 PendingTasks = PendingTasks or {}
 
-function replyError(request, errmsg)
-  local action = request.Action .. "-Error"
-  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Error = errmsg})
-end
-
-function replySuccess(request, data)
-  local action = request.Action .. "-Success"
-  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Data = data})
-end
-
 function GetInitialTaskKey(msg)
   return msg.Id
 end
@@ -149,7 +139,7 @@ Handlers.add(
   "getCompletedTaskById",
   Handlers.utils.hasMatchingTag("Action", "GetCompletedTaskById"),
   function (msg)
-    if msg.Tags.askId == nil then
+    if msg.Tags.TaskId == nil then
       replyError(msg, "TaskId is required")
       return
     end
