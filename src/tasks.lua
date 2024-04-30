@@ -16,7 +16,7 @@ function GetInitialTaskKey(msg)
 end
 
 function getExistingTaskKey(msg)
-  return msg.TaskId
+  return msg.Tags.TaskId
 end
 
 function getTaskList(tasks)
@@ -53,7 +53,7 @@ Handlers.add(
   "submit",
   Handlers.utils.hasMatchingTag("Action", "Submit"),
   function (msg)
-    if msg.TaskType == nil then
+    if msg.Tags.TaskType == nil then
       replyError(msg, "TaskType is required")
       return
     end
@@ -63,30 +63,30 @@ Handlers.add(
       return
     end
 
-    if msg.ComputeLimit == nil then
+    if msg.Tags.ComputeLimit == nil then
       replyError(msg, "ComputeLimit is required")
       return
     end
 
-    if msg.MemoryLimit == nil then
+    if msg.Tags.MemoryLimit == nil then
       replyError(msg, "MemoryLimit is required")
       return
     end
     
-    if msg.ComputeNodes == nil then
+    if msg.Tags.ComputeNodes == nil then
       replyError(msg, "ComputeNodes is required")
       return
     end
     local taskKey = GetInitialTaskKey(msg)
     PendingTasks[taskKey] = {}
     PendingTasks[taskKey].id = msg.Id
-    PendingTasks[taskKey].type = msg.TaskType
+    PendingTasks[taskKey].type = msg.Tags.TaskType
     PendingTasks[taskKey].inputData = msg.Data
-    PendingTasks[taskKey].computeLimit = msg.ComputeLimit
-    PendingTasks[taskKey].memoryLimit = msg.MemoryLimit
-    PendingTasks[taskKey].computeNodes = msg.ComputeNodes
+    PendingTasks[taskKey].computeLimit = msg.Tags.ComputeLimit
+    PendingTasks[taskKey].memoryLimit = msg.Tags.MemoryLimit
+    PendingTasks[taskKey].computeNodes = msg.Tags.ComputeNodes
 
-    local computeNodeList = require("json").decode(msg.ComputeNodes)
+    local computeNodeList = require("json").decode(msg.Tags.ComputeNodes)
     local computeNodeMap = convertToMap(computeNodeList)
     PendingTasks[taskKey].computeNodeMap = computeNodeMap
     replySuccess(msg, taskKey)
@@ -103,17 +103,16 @@ Handlers.add(
   end
 )
 
--- msg.TaskId, msg.Result
 Handlers.add(
   "reportResult",
   Handlers.utils.hasMatchingTag("Action", "ReportResult"),
   function (msg)
-    if msg.TaskId == nil then
+    if msg.Tags.TaskId == nil then
       replyError(msg, "TaskId is required")
       return
     end
 
-    if msg.NodeName == nil then
+    if msg.Tags.NodeName == nil then
       replyError(msg, "NodeName is required")
       return
     end
@@ -130,13 +129,13 @@ Handlers.add(
       return
     end
 
-    if pendingTask.computeNodeMap[msg.NodeName] == nil then
+    if pendingTask.computeNodeMap[msg.Tags.NodeName] == nil then
       replyError(msg, "NodeName not in ComputeNodes")
       return
     end
     PendingTasks[taskKey].result = PendingTasks[taskKey].result or {}
-    PendingTasks[taskKey].result[msg.NodeName] = msg.Data
-    PendingTasks[taskKey].computeNodeMap[msg.NodeName] = nil
+    PendingTasks[taskKey].result[msg.Tags.NodeName] = msg.Data
+    PendingTasks[taskKey].computeNodeMap[msg.Tags.NodeName] = nil
     if count(PendingTasks[taskKey].computeNodeMap) == 0 then
       CompletedTasks[taskKey] = PendingTasks[taskKey]
       CompletedTasks[taskKey].computeNodeMap = nil
@@ -150,7 +149,7 @@ Handlers.add(
   "getCompletedTaskById",
   Handlers.utils.hasMatchingTag("Action", "GetCompletedTaskById"),
   function (msg)
-    if msg.TaskId == nil then
+    if msg.Tags.askId == nil then
       replyError(msg, "TaskId is required")
       return
     end

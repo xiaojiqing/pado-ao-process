@@ -10,14 +10,14 @@ function replySuccess(request, data)
 end
 
 function getNodeKey(msg)
-  return msg.Name
+  return msg.Tags.Name
 end
 
 Handlers.add(
   "register",
   Handlers.utils.hasMatchingTag("Action", "Register"),
   function (msg)
-    if msg.Name == nil then
+    if msg.Tags.Name == nil then
       replyError(msg, "Name is required")
       return
     end
@@ -27,7 +27,7 @@ Handlers.add(
       return
     end
 
-    if msg.Desc == nil then
+    if msg.Tags.Desc == nil then
       replyError(msg, "Desc is required")
       return
     end
@@ -39,11 +39,11 @@ Handlers.add(
       return
     end
     Nodes[nodeKey] = {}
-    Nodes[nodeKey].name = msg.Name
+    Nodes[nodeKey].name = msg.Tags.Name
     Nodes[nodeKey].publickey = msg.Data
-    Nodes[nodeKey].desc = msg.Desc
+    Nodes[nodeKey].desc = msg.Tags.Desc
     Nodes[nodeKey].from = msg.From
-    replySuccess(msg, "register " .. msg.Name .. " by " .. msg.From)
+    replySuccess(msg, "register " .. msg.Tags.Name .. " by " .. msg.From)
   end
 )
 
@@ -51,7 +51,7 @@ Handlers.add(
   "update",
   Handlers.utils.hasMatchingTag("Action", "Update"),
   function (msg)
-    if msg.Name == nil then
+    if msg.Tags.Name == nil then
       replyError(msg, "Name is required")
       return
     end
@@ -59,7 +59,7 @@ Handlers.add(
     local nodeKey = getNodeKey(msg)
 
     if Nodes[nodeKey] == nil then
-      replyError(msg, "record " .. msg.Name .. " not exist")
+      replyError(msg, "record " .. msg.Tags.Name .. " not exist")
       return
     end
 
@@ -72,10 +72,10 @@ Handlers.add(
       Nodes[nodeKey].publickey = msg.Data
     end
 
-    if msg.Desc ~= nil then
-      Nodes[nodeKey].desc = msg.Desc
+    if msg.Tags.Desc ~= nil then
+      Nodes[nodeKey].desc = msg.Tags.Desc
     end
-    replySuccess(msg, "update " .. msg.Name .. " by " .. msg.From)
+    replySuccess(msg, "update " .. msg.Tags.Name .. " by " .. msg.From)
   end
 )
 
@@ -83,7 +83,7 @@ Handlers.add(
   "delete",
   Handlers.utils.hasMatchingTag("Action", "Delete"),
   function (msg)
-    if msg.Name == nil then
+    if msg.Tags.Name == nil then
       replyError(msg, "Name is required")
       return
     end
@@ -91,7 +91,7 @@ Handlers.add(
     local nodeKey = getNodeKey(msg)
 
     if Nodes[nodeKey] == nil then
-      replyError(msg, "record " .. msg.Name .. " not exist")
+      replyError(msg, "record " .. msg.Tags.Name .. " not exist")
       return
     end
 
@@ -101,7 +101,7 @@ Handlers.add(
     end
     Nodes[nodeKey] = nil
 
-    replySuccess(msg, "delete " .. msg.Name .. " by " .. msg.From)
+    replySuccess(msg, "delete " .. msg.Tags.Name .. " by " .. msg.From)
   end
 )
 
@@ -122,14 +122,14 @@ Handlers.add(
   "getNodeByName",
   Handlers.utils.hasMatchingTag("Action", "GetNodeByName"),
   function (msg)
-    if msg.Name == nil then
+    if msg.Tags.Name == nil then
       replyError(msg, "Name is required")
       return
     end
 
     local nodeKey = getNodeKey(msg)
     if Nodes[nodeKey] == nil then
-      replyError(msg, "record " .. msg.Name .. " not exist")
+      replyError(msg, "record " .. msg.Tags.Name .. " not exist")
       return
     end
 
