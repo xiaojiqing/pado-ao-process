@@ -1,43 +1,33 @@
 AllData = AllData or {}
-function replyError(request, errmsg)
-  local action = request.Action .. "-Error"
-  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Error = errmsg})
-end
-
-function replySuccess(request, data)
-  local action = request.Action .. "-Success"
-  ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Data = data})
-end
-
 
 function getInitialDataKey(msg)
   return msg.Id
 end
 
 function getExistingDataKey(msg)
-  return msg.DataId
+  return msg.Tags.DataId
 end
 
 Handlers.add(
   "register",
   Handlers.utils.hasMatchingTag("Action", "Register"),
   function (msg)
-    if msg.DataTag == nil then
+    if msg.Tags.DataTag == nil then
       replyError(msg, "DataTag is required")
       return
     end
 
-    if msg.Price == nil then
+    if msg.Tags.Price == nil then
       replyError(msg, "Price is required")
       return
     end
 
-    if msg.Nonce == nil then
+    if msg.Tags.Nonce == nil then
       replyError(msg, "Nonce is required")
       return
     end
 
-    if msg.EncMsg == nil then
+    if msg.Tags.EncMsg == nil then
       replyError(msg, "EncMsg is required")
       return
     end
@@ -50,11 +40,11 @@ Handlers.add(
 
     AllData[dataKey] = {}
     AllData[dataKey].id = msg.Id
-    AllData[dataKey].dataTag = msg.DataTag
-    AllData[dataKey].price = msg.Price
+    AllData[dataKey].dataTag = msg.Tags.DataTag
+    AllData[dataKey].price = msg.Tags.Price
     AllData[dataKey].encSks = msg.Data
-    AllData[dataKey].nonce = msg.Nonce
-    AllData[dataKey].encMsg = msg.EncMsg
+    AllData[dataKey].nonce = msg.Tags.Nonce
+    AllData[dataKey].encMsg = msg.Tags.EncMsg
     AllData[dataKey].from = msg.From
     replySuccess(msg, msg.Id)
   end
@@ -64,7 +54,7 @@ Handlers.add(
   "getDataById",
   Handlers.utils.hasMatchingTag("Action", "GetDataById"),
   function (msg)
-    if msg.DataId == nil then
+    if msg.Tags.DataId == nil then
       replyError(msg, "DataId is required")
       return
     end
@@ -85,7 +75,7 @@ Handlers.add(
   "delete",
   Handlers.utils.hasMatchingTag("Action", "Delete"),
   function (msg)
-    if msg.DataId == nil then
+    if msg.Tags.DataId == nil then
       replyError(msg, "DataId is required")
       return
     end
