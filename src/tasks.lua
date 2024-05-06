@@ -85,7 +85,7 @@ Handlers.add(
     --PendingTasks[taskKey].computeNodeMap = computeNodeMap
     --PendingTasks[taskKey].verifyingNodes = computeNodeList
 
-    
+    replySuccess(msg, taskKey)
   end
 )
 
