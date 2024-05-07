@@ -103,8 +103,7 @@ Handlers.add(
     for _, node in pairs(Nodes) do
       table.insert(nodes, node)
     end
-    local encoded_nodes = require('json').encode(nodes)
-    replySuccess(msg, encoded_nodes)
+    replySuccess(msg, nodes)
   end
 )
 
@@ -124,8 +123,7 @@ Handlers.add(
     end
 
     local node = Nodes[nodeKey]
-    local encodedNode = require("json").encode(node)
-    replySuccess(msg, encodedNode)
+    replySuccess(msg, node)
   end
 )
 
@@ -137,16 +135,13 @@ Handlers.add(
     local computeNodeMap = {}
     for _, nodeName in ipairs(computeNodes) do
       if Nodes[nodeName] == nil then
-        local errorMap = { userData = msg.Tags.UserData, errorMsg = "not found node: " .. nodeName }
-        local encodedError = require("json").encode(errorMap)
-        replyError(msg, encodedError)
+        local errorMsg = "not found node: " .. nodeName
+        replyError(msg, errorMsg)
         return
       end
       computeNodeMap[nodeName] = Nodes[nodeName].from
     end
 
-    local dataMap = { userData = msg.Tags.UserData, computeNodeMap = computeNodeMap }
-    local encodedData = require("json").encode(dataMap)
-    replySuccess(msg, encodedData)
+    replySuccess(msg, computeNodeMap)
   end
 )

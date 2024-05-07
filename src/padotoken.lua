@@ -75,6 +75,11 @@ Handlers.add('balance', Handlers.utils.hasMatchingTag('Action', 'Balance'), func
     bal = Balances[msg.From]
   end
 
+  if msg.Tags.UserData ~= nil then
+    replySuccess(msg, bal)
+    return
+  end
+
   ao.send({
     Target = msg.From,
     Balance = bal,
@@ -227,21 +232,12 @@ Handlers.add("transferFrom", Handlers.utils.hasMatchingTag("Action", "TransferFr
       Balances[owner] = tostring(bint.__sub(Balances[owner], msg.Quantity))
       if not Balances[recipient] then Balances[recipient] = tostring(0) end
       Balances[recipient] = tostring(bint.__add(Balances[recipient], msg.Quantity))
+      replySuccess(msg, "transfer from success")
     else
-      ao.send({
-        Target = msg.From,
-        Action = 'TransferFrom-Error',
-        ['Message-Id'] = msg.Id,
-        Error = 'Insufficient Balance!'
-      })
+      replyError(msg, "Insufficient Balance")
     end
   else
-    ao.send({
-      Target = msg.From,
-      Action = 'TransferFrom-Error',
-      ['Message-Id'] = msg.Id,
-      Error = 'Insufficient Allowance!'
-    })
+    replyError(msg, "Insufficient allowance")
   end
 end)
 

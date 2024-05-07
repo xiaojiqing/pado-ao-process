@@ -1,10 +1,15 @@
 TaskProcess = TaskProcess or ""
+DataProcess = DataProcess or ""
 TaskId = TaskId or ""
+DataId = DataId or ""
 
 function setTaskProcess(processId)
   TaskProcess = processId
 end
 
+function setDataProcess(processId)
+  DataProcess = processId
+end
 function addSuccessHandler(name, action)
   Handlers.add(
     name,
@@ -17,6 +22,11 @@ function addSuccessHandler(name, action)
       print("=========END===============")
       if msg.Action == "Submit-Success" then
         TaskId = msg.Data
+      elseif msg.Action == "AllData-Success" then
+        allData = require("json").decode(msg.Data)
+        if #allData > 0 then
+          DataId = allData[1].id
+        end
       end
     end
   )
@@ -41,6 +51,13 @@ function addHandler(name, action)
   addErrorHandler(name .. "Error", action .. "-Error")
 end
 
+function testAllData()
+  addHandler("allData", "AllData")
+
+  local action = "AllData"
+  Send({Target = DataProcess, Action = action})
+end
+
 function testSubmit()
   addHandler("submit", "Submit")
 
@@ -63,6 +80,7 @@ function testSubmit()
   Send({Target = TaskProcess, Action = action, TaskType = taskType, Data = inputData, ComputeLimit = computeLimit})
   Send({Target = TaskProcess, Action = action, TaskType = taskType, Data = inputData, ComputeLimit = computeLimit, MemoryLimit = memoryLimit})
   Send({Target = TaskProcess, Action = action, TaskType = taskType, Data = inputData, ComputeLimit = computeLimit, MemoryLimit = memoryLimit, ComputeNodes = encodedNodes})
+  Send({Target = TaskProcess, Action = action, TaskType = taskType, Data = inputData, ComputeLimit = computeLimit, MemoryLimit = memoryLimit, ComputeNodes = encodedNodes, DataId = DataId})
 end
 
 

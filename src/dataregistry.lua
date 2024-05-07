@@ -66,8 +66,7 @@ Handlers.add(
     end
 
     local data = AllData[dataKey]
-    local encodedData = require("json").encode(data)
-    replySuccess(msg, encodedData)
+    replySuccess(msg, data)
   end
 )
 
@@ -105,7 +104,6 @@ Handlers.add(
     for _, data in pairs(AllData) do
       table.insert(allData, data)
     end
-    local encoded_data = require('json').encode(allData)
-    replySuccess(msg, encoded_data)
+    replySuccess(msg, allData)
   end
 )
