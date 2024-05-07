@@ -115,7 +115,7 @@ Handlers.add(
     local originMsg = PendingTasks[taskKey].msg
     PendingTasks[taskKey] = nil
 
-    replySuccess(originMsg, "Verify compute nodes error: " .. errorMsg)
+    replyError(originMsg, "Verify compute nodes error: " .. errorMsg)
   end
 )
 
