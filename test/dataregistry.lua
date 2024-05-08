@@ -46,7 +46,7 @@ function testRegistry()
 
   local action = "Register"
   local dataTag = "data tag"
-  local price = "20"
+  local price = require("json").encode({price = "20", symbol = "PADO Token"})
   local encSks = "enc private key"
   local nonce = " a nonce"
   local encMsg = "ciphertext"

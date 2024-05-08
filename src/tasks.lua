@@ -141,8 +141,10 @@ Handlers.add(
     local dataMap = require("json").decode(msg.Data)
     local taskKey = dataMap.userData
     local data = dataMap.data
+    local dataPrice = require("json").decode(data.price)
     local originMsg = PendingTasks[taskKey].msg
-    PendingTasks[taskKey].dataPrice = data.price
+    PendingTasks[taskKey].dataPrice = dataPrice.price
+    PendingTasks[taskKey].priceSymbol = dataPrice.symbol
     PendingTasks[taskKey].dataVerified = true
     PendingTasks[taskKey].dataProvider = data.from
 

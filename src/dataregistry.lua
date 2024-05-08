@@ -20,6 +20,18 @@ Handlers.add(
     if msg.Tags.Price == nil then
       replyError(msg, "Price is required")
       return
+    else
+      local dataPrice = require("json").decode(msg.Tags.Price)
+      if dataPrice.price == nil then
+        replyError(msg, "price is missing")
+        return
+      elseif dataPrice.symbol == nil then
+        replyError(msg, "symbol is missing")
+        return
+      elseif dataPrice.symbol ~= "PADO Token" then
+        replyError(msg, "incorrect price symbol")
+        return
+      end
     end
 
     if msg.Tags.Nonce == nil then
