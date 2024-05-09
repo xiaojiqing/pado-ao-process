@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "build": "tsc --build tsconfig.json"
+  },
+  "dependencies": {
+    "@permaweb/aoconnect": "^0.0.52",
+    "arlocal": "^1.1.66",
+    "arweave": "^1.15.0",
+    "arweavekit": "^1.5.1",
+    "typescript": "^5.4.5"
+  }
+}
