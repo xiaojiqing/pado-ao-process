@@ -1,6 +1,8 @@
 CompletedTasks = CompletedTasks or {}
 PendingTasks = PendingTasks or {}
 
+local bint = require('.bint')(256)
+
 function GetInitialTaskKey(msg)
   return msg.Id
 end
@@ -15,12 +17,6 @@ function getTaskList(tasks)
     table.insert(result, task)
   end
   return result
-end
-
-function getEncodedTaskList(tasks)
-  local taskList = getTaskList(tasks)
-  local encodedList = require("json").encode(taskList)
-  return encodedList
 end
 
 function convertToMap(list)
@@ -45,6 +41,11 @@ Handlers.add(
   function (msg)
     if msg.Tags.TaskType == nil then
       replyError(msg, "TaskType is required")
+      return
+    end
+
+    if msg.Tags.DataId == nil then
+      replyError(msg, "DataId is required")
       return
     end
 
@@ -75,10 +76,15 @@ Handlers.add(
     PendingTasks[taskKey].computeLimit = msg.Tags.ComputeLimit
     PendingTasks[taskKey].memoryLimit = msg.Tags.MemoryLimit
     PendingTasks[taskKey].computeNodes = msg.Tags.ComputeNodes
-    PendingTasks[taskKey].computeNodesVerified = false
+    PendingTasks[taskKey].from = msg.From
+    PendingTasks[taskKey].nodeVerified = false
+    PendingTasks[taskKey].dataVerified = false
+    PendingTasks[taskKey].tokenVerified = false
     PendingTasks[taskKey].msg = msg
 
     ao.send({Target = NODE_PROCESS_ID, Tags = {Action = "GetComputeNodes", ComputeNodes = msg.Tags.ComputeNodes, UserData = taskKey}}) 
+    ao.send({Target = DATA_PROCESS_ID, Tags = {Action = "GetDataById", DataId = msg.Tags.DataId, UserData = taskKey}})
+    ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Balance", Recipient = msg.From, UserData = taskKey}})
 
     --local computeNodeList = require("json").decode(msg.Tags.ComputeNodes)
     --local computeNodeMap = convertToMap(computeNodeList)
@@ -95,13 +101,20 @@ Handlers.add(
   function (msg)
     local dataMap = require("json").decode(msg.Data)
     local taskKey = dataMap.userData
-    local computeNodeMap = dataMap.computeNodeMap
+    local computeNodeMap = dataMap.data
     local originMsg = PendingTasks[taskKey].msg
     PendingTasks[taskKey].computeNodeMap = computeNodeMap
-    PendingTasks[taskKey].computeNodesVerified = true
-    PendingTasks[taskKey].msg = nil
+    PendingTasks[taskKey].nodeVerified = true
 
-    replySuccess(originMsg, taskKey)
+    local theTask = PendingTasks[taskKey]
+    if theTask.nodeVerified and theTask.dataVerified and theTask.tokenVerified then
+      if bint.__le(theTask.dataPrice, theTask.tokenBalance) then
+        ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "TransferFrom", Sender = theTask.from, Recipient = ao.id, Quantity = theTask.dataPrice, UserData = taskKey}})
+      else
+        PendingTasks[taskKey] = nil
+        replyError(originMsg, "Insufficient Balance")
+      end
+    end
   end
 )
 
@@ -112,20 +125,133 @@ Handlers.add(
     local errorMap = require("json").decode(msg.Tags.Error)
     local taskKey = errorMap.userData
     local errorMsg = errorMap.errorMsg
-    local originMsg = PendingTasks[taskKey].msg
-    PendingTasks[taskKey] = nil
+    if PendingTasks[taskKey] ~= nil then
+      local originMsg = PendingTasks[taskKey].msg
+      PendingTasks[taskKey] = nil
 
-    replySuccess(originMsg, "Verify compute nodes error: " .. errorMsg)
+      replyError(originMsg, "Verify compute nodes error: " .. errorMsg)
+    end
   end
 )
 
 Handlers.add(
+  "getDataByIdSuccess",
+  Handlers.utils.hasMatchingTag("Action", "GetDataById-Success"),
+  function (msg)
+    local dataMap = require("json").decode(msg.Data)
+    local taskKey = dataMap.userData
+    local data = dataMap.data
+    local dataPrice = require("json").decode(data.price)
+    local originMsg = PendingTasks[taskKey].msg
+    PendingTasks[taskKey].dataPrice = dataPrice.price
+    PendingTasks[taskKey].priceSymbol = dataPrice.symbol
+    PendingTasks[taskKey].dataVerified = true
+    PendingTasks[taskKey].dataProvider = data.from
+
+    local theTask = PendingTasks[taskKey]
+    if theTask.nodeVerified and theTask.dataVerified and theTask.tokenVerified then
+      if bint.__le(theTask.dataPrice, theTask.tokenBalance) then
+        ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "TransferFrom", Sender = theTask.from, Recipient = ao.id, Quantity = theTask.dataPrice, UserData = taskKey}})
+      else
+        PendingTasks[taskKey] = nil
+        replyError(originMsg, "Insufficient Balance")
+      end
+    end
+  end
+)
+
+Handlers.add(
+  "getDataByIdError",
+  Handlers.utils.hasMatchingTag("Action", "GetDataById-Error"),
+  function (msg)
+    local errorMap = require("json").decode(msg.Tags.Error)
+    local taskKey = errorMap.userData
+    local errorMsg = errorMap.errorMsg
+    if PendingTasks[taskKey] ~= nil then
+      local originMsg = PendingTasks[taskKey].msg
+      PendingTasks[taskKey] = nil
+
+      replyError(originMsg, "Verify data error: " .. errorMsg)
+    end
+  end
+)
+
+Handlers.add(
+  "balanceSuccess",
+  Handlers.utils.hasMatchingTag("Action", "Balance-Success"),
+  function (msg)
+    local dataMap = require("json").decode(msg.Data)
+    local taskKey = dataMap.userData
+    local balance = dataMap.data
+    local originMsg = PendingTasks[taskKey].msg
+    PendingTasks[taskKey].tokenBalance = balance
+    PendingTasks[taskKey].tokenVerified = true
+
+    local theTask = PendingTasks[taskKey]
+    if theTask.nodeVerified and theTask.dataVerified and theTask.tokenVerified then
+      if bint.__le(theTask.dataPrice, theTask.tokenBalance) then
+        ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "TransferFrom", Sender = theTask.from, Recipient = ao.id, Quantity = theTask.dataPrice, UserData = taskKey}})
+      else
+        PendingTasks[taskKey] = nil
+        replyError(originMsg, "Insufficient Balance")
+      end
+    end
+  end
+)
+
+Handlers.add(
+  "balanceError",
+  Handlers.utils.hasMatchingTag("Action", "Balance-Error"),
+  function (msg)
+    local errorMap = require("json").decode(msg.Tags.Error)
+    local taskKey = errorMap.userData
+    local errorMsg = errorMap.errorMsg
+    if PendingTasks[taskKey] ~= nil then
+      local originMsg = PendingTasks[taskKey].msg
+      PendingTasks[taskKey] = nil
+
+      replyError(originMsg, "Verify token error: " .. errorMsg)
+    end
+  end
+)
+
+Handlers.add(
+  "transferFromSuccess",
+  Handlers.utils.hasMatchingTag("Action", "TransferFrom-Success"),
+  function (msg)
+    local dataMap = require("json").decode(msg.Data)
+    local taskKey = dataMap.userData
+    local originMsg = PendingTasks[taskKey].msg
+
+    PendingTasks[taskKey].msg = nil
+    replySuccess(originMsg, taskKey)
+  end
+)
+
+Handlers.add(
+  "transferFromError",
+  Handlers.utils.hasMatchingTag("Action", "TransferFrom-Error"),
+  function (msg)
+    local errorMap = require("json").decode(msg.Tags.Error)
+    local taskKey = errorMap.userData
+    local errorMsg = errorMap.errorMsg
+    if PendingTasks[taskKey] ~= nil then
+      local originMsg = PendingTasks[taskKey].msg
+      PendingTasks[taskKey] = nil
+
+      replyError(originMsg, "transfer from error: " .. errorMsg)
+    end
+  end
+)
+    
+Handlers.add(
   "getPendingTasks",
   Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
   function (msg)
-    local encodedTasks =  getEncodedTaskList(PendingTasks)
-
-    replySuccess(msg, encodedTasks)
+    for taskId, task in pairs(PendingTasks) do
+      print(taskId .. " node:" .. tostring(task.nodeVerified) .. " data: " .. tostring(task.dataVerified) .. " token: " .. tostring(task.tokenVerified))
+    end
+    replySuccess(msg, PendingTasks)
   end
 )
 
@@ -157,7 +283,7 @@ Handlers.add(
 
     local requiredFrom = pendingTask.computeNodeMap[msg.Tags.NodeName]
     if requiredFrom == nil then
-      replyError(msg, "NodeName not in ComputeNodes")
+      replyError(msg, "NodeName[" .. msg.Tags.NodeName .. "] not in ComputeNodes")
       return
     elseif requiredFrom ~= msg.From then
       replyError(msg, msg.Tags.NodeName .. " should reported by " .. requiredFrom)
@@ -167,6 +293,8 @@ Handlers.add(
     PendingTasks[taskKey].result[msg.Tags.NodeName] = msg.Data
     PendingTasks[taskKey].computeNodeMap[msg.Tags.NodeName] = nil
     if count(PendingTasks[taskKey].computeNodeMap) == 0 then
+      local theTask = PendingTasks[taskKey]
+      ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = theTask.dataProvider, Quantity = theTask.dataPrice}})
       CompletedTasks[taskKey] = PendingTasks[taskKey]
       CompletedTasks[taskKey].computeNodeMap = nil
       PendingTasks[taskKey] = nil
@@ -190,9 +318,8 @@ Handlers.add(
       replyError(msg, "CompletedTask " .. taskKey .. " not exist")
       return
     end
-    local encodedTask = require("json").encode(task);
 
-    replySuccess(msg, encodedTask)
+    replySuccess(msg, task)
   end
 )
 
@@ -200,8 +327,7 @@ Handlers.add(
   "getCompletedTasks",
   Handlers.utils.hasMatchingTag("Action", "GetCompletedTasks"),
   function (msg)
-    local encodedTasks = getEncodedTaskList(CompletedTasks) 
-    replySuccess(msg, encodedTasks)
+    replySuccess(msg, CompletedTasks)
   end
 )
 
@@ -213,7 +339,6 @@ Handlers.add(
     allTasks.pendingTasks = getTaskList(PendingTasks)
     allTasks.completedTasks = getTaskList(CompletedTasks)
 
-    local encodedTasks = require("json").encode(allTasks)
-    replySuccess(msg, encodedTasks)
+    replySuccess(msg, allTasks)
   end
 )

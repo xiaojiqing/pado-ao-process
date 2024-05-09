@@ -20,6 +20,18 @@ Handlers.add(
     if msg.Tags.Price == nil then
       replyError(msg, "Price is required")
       return
+    else
+      local dataPrice = require("json").decode(msg.Tags.Price)
+      if dataPrice.price == nil then
+        replyError(msg, "price is missing")
+        return
+      elseif dataPrice.symbol == nil then
+        replyError(msg, "symbol is missing")
+        return
+      elseif dataPrice.symbol ~= "PADO Token" then
+        replyError(msg, "incorrect price symbol")
+        return
+      end
     end
 
     if msg.Tags.Nonce == nil then
@@ -66,8 +78,7 @@ Handlers.add(
     end
 
     local data = AllData[dataKey]
-    local encodedData = require("json").encode(data)
-    replySuccess(msg, encodedData)
+    replySuccess(msg, data)
   end
 )
 
@@ -105,7 +116,6 @@ Handlers.add(
     for _, data in pairs(AllData) do
       table.insert(allData, data)
     end
-    local encoded_data = require('json').encode(allData)
-    replySuccess(msg, encoded_data)
+    replySuccess(msg, allData)
   end
 )

@@ -41,6 +41,7 @@ if Denomination ~= 12 then Denomination = 12 end
 
 if not Logo then Logo = 'SBCCXwwecBlDqRLUjb8dYABExTJXLieawf7m2aBJ-KY' end
 
+if not Allowances then Allowances = { } end
 --[[
      Add handlers for each incoming Action defined by the ao Standard Token Specification
    ]]
@@ -72,6 +73,11 @@ Handlers.add('balance', Handlers.utils.hasMatchingTag('Action', 'Balance'), func
     bal = Balances[msg.Tags.Recipient]
   elseif Balances[msg.From] then
     bal = Balances[msg.From]
+  end
+
+  if msg.Tags.UserData ~= nil then
+    replySuccess(msg, bal)
+    return
   end
 
   ao.send({
@@ -171,3 +177,67 @@ Handlers.add('mint', Handlers.utils.hasMatchingTag('Action', 'Mint'), function(m
     })
   end
 end)
+
+function getAllowance(owner, spender)
+  local qty = tostring(0)
+  if Allowances[owner] ~= nil then
+    if Allowances[owner][spender] ~= nil then
+      qty = Allowances[owner][spender]
+    end
+  end
+  return qty
+end
+
+Handlers.add("allowance", Handlers.utils.hasMatchingTag("Action", "Allowance"), function (msg)
+  assert(type(msg.Approver) == 'string', 'Approver is required!')
+  assert(type(msg.Spender) == 'string', 'Spender is required!')
+
+  local owner = msg.Approver
+  local spender = msg.Spender
+  local qty = getAllowance(owner, spender)
+
+  ao.send({Target = msg.From, Allowance = qty, Data = qty})
+end)
+  
+Handlers.add("approve", Handlers.utils.hasMatchingTag("Action", "Approve"), function(msg)
+  assert(type(msg.Spender) == 'string', 'Spender is required!')
+  assert(type(msg.Quantity) == 'string', 'Quantity is required!')
+  assert(bint.__lt(0, msg.Quantity), 'Quantity must be greater then zero!')
+
+  local owner = msg.From
+  local spender = msg.Spender
+  local qty = msg.Quantity
+  Allowances[owner] = Allowances[owner] or {}
+  Allowances[owner][spender] = qty
+end)
+
+Handlers.add("transferFrom", Handlers.utils.hasMatchingTag("Action", "TransferFrom"), function(msg)
+  assert(type(msg.Sender) == 'string', 'Sender is required!')
+  assert(type(msg.Recipient) == 'string', 'Recipient is required!')
+  assert(type(msg.Quantity) == 'string', 'Quantity is required!')
+  assert(bint.__lt(0, bint(msg.Quantity)), 'Quantity must be greater than 0')
+  
+  local owner = msg.Sender
+  local spender = msg.From
+  local recipient = msg.Recipient
+  local qty = bint(msg.Quantity)
+  local allowance = bint(getAllowance(owner, spender))
+
+  if bint.__le(qty, allowance) then
+    if not Balances[owner] then Balances[owner] = tostring(0) end
+    
+    if bint.__le(qty, Balances[owner]) then
+      Allowances[owner][spender] = tostring(bint.__sub(Allowances[owner][spender], msg.Quantity))
+    
+      Balances[owner] = tostring(bint.__sub(Balances[owner], msg.Quantity))
+      if not Balances[recipient] then Balances[recipient] = tostring(0) end
+      Balances[recipient] = tostring(bint.__add(Balances[recipient], msg.Quantity))
+      replySuccess(msg, "transfer from success")
+    else
+      replyError(msg, "Insufficient Balance")
+    end
+  else
+    replyError(msg, "Insufficient allowance")
+  end
+end)
+
