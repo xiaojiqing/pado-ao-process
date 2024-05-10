@@ -17,11 +17,11 @@ async function transferTokenToTask(quantity: string, signer: any) {
         ]
     });
 
-    let res = await result({
+    let {Messages} = await result({
         "process": TOKEN_PROCESS,
         "message": msgId,
     });
-    console.log("transfer result: ", res)
+    console.log("transfer result: ", Messages[0].Data)
 }
 async function testSubmit(dataId: string, nodes: string[], signer: any) {
     let action = "Submit"
@@ -112,7 +112,7 @@ async function testDeleteCompletedTask(taskId: string, signer:any) {
 async function getExpectedMessage(Messages: any[]) {
     let address = await getWalletAddress()
     console.log("address ", address)
-    console.log("messages ", Messages)
+    // console.log("messages ", Messages)
     for (let msg of Messages) {
         if (msg.Target === address) {
             return msg;
@@ -149,6 +149,26 @@ async function testReportAllResult(nodes: string[], taskId: string, signer: any)
         console.log(`${node} result: ${res}`)
     }
 }
+async function testBalance(address: string, signer: any) {
+    let action = "Balance"
+
+    let msgId = await message({
+        "process": TOKEN_PROCESS,
+        "signer": signer,
+        "tags": [
+            {"name": "Action", "value": action},
+            {"name": "Recipient", "value": address},
+        ]
+    });
+
+    let {Messages} = await result({
+        "process": TOKEN_PROCESS,
+        "message": msgId,
+    });
+
+    console.log("Balance: ", Messages[0].Data)
+    return Messages[0].Data
+}
 async function testAllowance(signer: any) {
     let action = "Allowance"
 
@@ -163,7 +183,7 @@ async function testAllowance(signer: any) {
         "process": TASK_PROCESS,
         "message": msgId,
     });
-    console.log(Messages)
+    // console.log(Messages)
     console.log("allowance: ", Messages.Messages[0].Data)
     return Messages.Messages[0].Data
 }
@@ -174,6 +194,7 @@ function sleep(ms: number) {
 
 async function main() {
     const signer = await getSigner()
+    let address = await getWalletAddress()
     const nodes = ["js_aos1", "js_aos2", "js_aos3"]
 
     await registerAllNodes(nodes, signer);
@@ -181,17 +202,18 @@ async function main() {
     let dataId = await registerData(signer)
 
     await testAllowance(signer)
-    await transferTokenToTask("50", signer)
+    await testBalance(address, signer)
+    await testBalance(TASK_PROCESS, signer)
+    await transferTokenToTask("5", signer)
 
     await sleep(2000)
 
     let taskId = await testSubmit(dataId, nodes, signer)
     console.log(`task id: ${taskId}`)
 
-    let tasks = await testGetPendingTasks(signer)
-    console.log(`tasks ${tasks}`)
-
     await sleep(3000)
+
+    await testGetPendingTasks(signer)
 
     await testReportAllResult(nodes, taskId, signer)
     await testGetCompletedTasks(signer)
@@ -202,5 +224,8 @@ async function main() {
     await deleteAllNodes(nodes, signer);
     console.log(new Date())
     await testAllowance(signer)
+
+    await testBalance(address, signer)
+    await testBalance(TASK_PROCESS,signer)
 }
 main()
