@@ -49,7 +49,7 @@ Handlers.add(
   function (msg)
     local sender = msg.Sender
     local quantity = msg.Quantity
-    print(msg.Tags.Action .. " " .. sender .. " " .. quantity)
+    --print(msg.Tags.Action .. " " .. sender .. " " .. quantity)
 
     Allowances[sender] = Allowances[sender] or "0"
     Allowances[sender] = tostring(bint.__add(Allowances[sender], quantity))
@@ -62,7 +62,7 @@ Handlers.add(
   function (msg)
     local recipient = msg.Recipient
     local quantity = msg.Quantity
-    print(msg.Tags.Action .. " " .. recipient .. " " .. quantity)
+    --print(msg.Tags.Action .. " " .. recipient .. " " .. quantity)
     
     Allowances[recipient] = tostring(bint.__sub(Allowances[recipient], quantity))
   end
@@ -238,7 +238,7 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
   function (msg)
     for taskId, task in pairs(PendingTasks) do
-      print(taskId .. " node:" .. tostring(task.nodeVerified) .. " data: " .. tostring(task.dataVerified))
+      --print(taskId .. " node:" .. tostring(task.nodeVerified) .. " data: " .. tostring(task.dataVerified))
     end
     replySuccess(msg, PendingTasks)
   end
