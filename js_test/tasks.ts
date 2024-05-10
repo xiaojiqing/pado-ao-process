@@ -109,6 +109,18 @@ async function testDeleteCompletedTask(taskId: string, signer:any) {
     });
     return Messages[0].Data
 }
+async function getExpectedMessage(Messages: any[]) {
+    let address = await getWalletAddress()
+    console.log("address ", address)
+    console.log("messages ", Messages)
+    for (let msg of Messages) {
+        if (msg.Target === address) {
+            return msg;
+        }
+    }
+    return null
+}
+
 async function testReportResult(node:string, taskId:string, signer:any) {
     let action = "ReportResult"
     let computeResult = "compute result"
@@ -124,22 +136,36 @@ async function testReportResult(node:string, taskId:string, signer:any) {
         "data": computeResult
     });
 
-    let Messages = await result({
+    let {Messages} = await result({
         "process": TASK_PROCESS,
         "message": msgId,
     });
-    if (!Messages.Messages[0].Data) {
-        for (let msg of Messages.Messages) {
-            console.log(msg.Tags)
-        }
-    }
-    return Messages.Messages[0].Data
+    let Message = await getExpectedMessage(Messages)
+    return Message.Data
 }
 async function testReportAllResult(nodes: string[], taskId: string, signer: any) {
     for (const node of nodes) {
         let res = await testReportResult(node, taskId, signer)
         console.log(`${node} result: ${res}`)
     }
+}
+async function testAllowance(signer: any) {
+    let action = "Allowance"
+
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": signer,
+        "tags": [
+            {"name": "Action", "value": action},
+        ]
+    });
+    let Messages = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    });
+    console.log(Messages)
+    console.log("allowance: ", Messages.Messages[0].Data)
+    return Messages.Messages[0].Data
 }
 
 function sleep(ms: number) {
@@ -154,6 +180,7 @@ async function main() {
 
     let dataId = await registerData(signer)
 
+    await testAllowance(signer)
     await transferTokenToTask("50", signer)
 
     await sleep(2000)
@@ -174,5 +201,6 @@ async function main() {
     await deleteData(dataId, signer);
     await deleteAllNodes(nodes, signer);
     console.log(new Date())
+    await testAllowance(signer)
 }
 main()

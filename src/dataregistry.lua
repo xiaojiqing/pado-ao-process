@@ -28,7 +28,7 @@ Handlers.add(
       elseif dataPrice.symbol == nil then
         replyError(msg, "symbol is missing")
         return
-      elseif dataPrice.symbol ~= "PADO Token" then
+      elseif dataPrice.symbol ~= "AOCRED" then
         replyError(msg, "incorrect price symbol")
         return
       end

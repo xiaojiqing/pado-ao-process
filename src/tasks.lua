@@ -49,7 +49,7 @@ Handlers.add(
   function (msg)
     local sender = msg.Sender
     local quantity = msg.Quantity
-	print(msg.Tags.Action .. " " .. sender .. " " .. quantity)
+    print(msg.Tags.Action .. " " .. sender .. " " .. quantity)
 
     Allowances[sender] = Allowances[sender] or "0"
     Allowances[sender] = tostring(bint.__add(Allowances[sender], quantity))
@@ -62,11 +62,23 @@ Handlers.add(
   function (msg)
     local recipient = msg.Recipient
     local quantity = msg.Quantity
-	print(msg.Tags.Action .. " " .. recipient .. " " .. quantity)
+    print(msg.Tags.Action .. " " .. recipient .. " " .. quantity)
     
     Allowances[recipient] = tostring(bint.__sub(Allowances[recipient], quantity))
   end
 ) 
+
+Handlers.add(
+  "allowance",
+  Handlers.utils.hasMatchingTag("Action", "Allowance"),
+  function (msg)
+    local allowance = "0"
+    if Allowances[msg.From] ~= nil then
+      allowance = Allowances[msg.From]
+    end
+    replySuccess(msg, allowance)
+  end
+)
 
 Handlers.add(
   "submit",
@@ -270,8 +282,7 @@ Handlers.add(
     PendingTasks[taskKey].result[msg.Tags.NodeName] = msg.Data
     PendingTasks[taskKey].computeNodeMap[msg.Tags.NodeName] = nil
     local notReportedCount =  count(PendingTasks[taskKey].computeNodeMap)
-	print("not reported count: " .. notReportedCount)
-	if notReportedCount == 0 then
+    if notReportedCount == 0 then
       local theTask = PendingTasks[taskKey]
       for _, recipient in pairs(theTask.tokenRecipients) do
           ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = recipient, Quantity = tostring(TOKEN_FOR_COMPUTATION)}})
