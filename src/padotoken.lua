@@ -105,6 +105,7 @@ Handlers.add('transfer', Handlers.utils.hasMatchingTag('Action', 'Transfer'), fu
   assert(type(msg.Quantity) == 'string', 'Quantity is required!')
   assert(bint.__lt(0, bint(msg.Quantity)), 'Quantity must be greater than 0')
 
+  print("transfer from " .. msg.From .. " to " .. msg.Recipient .. " qty " .. msg.Quantity)
   if not Balances[msg.From] then Balances[msg.From] = "0" end
   if not Balances[msg.Recipient] then Balances[msg.Recipient] = "0" end
 

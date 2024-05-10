@@ -1,10 +1,28 @@
 import {message, result} from "@permaweb/aoconnect"
-import {TASK_PROCESS} from "./constants"
+import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
 import {getSigner, getWalletAddress} from "./utils"
 import {testRegistry as registerData, testDelete as deleteData} from "./dataregistry"
 import {registerAllNodes, deleteAllNodes} from "./noderegistry"
 
+async function transferTokenToTask(quantity: string, signer: any) {
+    let action = "Transfer"
 
+    let msgId = await message({
+        "process": TOKEN_PROCESS,
+        "signer": signer,
+        "tags": [
+            {"name": "Action", "value": action},
+            {"name": "Recipient", "value": TASK_PROCESS},
+            {"name": "Quantity", "value": quantity},
+        ]
+    });
+
+    let res = await result({
+        "process": TOKEN_PROCESS,
+        "message": msgId,
+    });
+    console.log("transfer result: ", res)
+}
 async function testSubmit(dataId: string, nodes: string[], signer: any) {
     let action = "Submit"
     let taskType = "task type"
@@ -110,7 +128,11 @@ async function testReportResult(node:string, taskId:string, signer:any) {
         "process": TASK_PROCESS,
         "message": msgId,
     });
-    // console.log(Messages)
+    if (!Messages.Messages[0].Data) {
+        for (let msg of Messages.Messages) {
+            console.log(msg.Tags)
+        }
+    }
     return Messages.Messages[0].Data
 }
 async function testReportAllResult(nodes: string[], taskId: string, signer: any) {
@@ -118,6 +140,10 @@ async function testReportAllResult(nodes: string[], taskId: string, signer: any)
         let res = await testReportResult(node, taskId, signer)
         console.log(`${node} result: ${res}`)
     }
+}
+
+function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function main() {
@@ -128,11 +154,17 @@ async function main() {
 
     let dataId = await registerData(signer)
 
+    await transferTokenToTask("50", signer)
+
+    await sleep(2000)
+
     let taskId = await testSubmit(dataId, nodes, signer)
     console.log(`task id: ${taskId}`)
 
     let tasks = await testGetPendingTasks(signer)
     console.log(`tasks ${tasks}`)
+
+    await sleep(3000)
 
     await testReportAllResult(nodes, taskId, signer)
     await testGetCompletedTasks(signer)
@@ -141,5 +173,6 @@ async function main() {
     await testDeleteCompletedTask(taskId, signer);
     await deleteData(dataId, signer);
     await deleteAllNodes(nodes, signer);
+    console.log(new Date())
 }
 main()

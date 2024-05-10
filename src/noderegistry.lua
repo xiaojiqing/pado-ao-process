@@ -131,6 +131,7 @@ Handlers.add(
   "getComputeNodes",
   Handlers.utils.hasMatchingTag("Action", "GetComputeNodes"),
   function (msg)
+    print("all nodes:" .. require("json").encode(Nodes))
     local computeNodes = require("json").decode(msg.Tags.ComputeNodes)
     local computeNodeMap = {}
     for _, nodeName in ipairs(computeNodes) do

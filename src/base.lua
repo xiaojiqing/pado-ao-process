@@ -1,6 +1,7 @@
 NODE_PROCESS_ID = NODE_PROCESS_ID or "Vlq4jWP6PLRo0Msjnxp8-vg9HalZv9e8tiz13OTK3gk"
 DATA_PROCESS_ID = DATA_PROCESS_ID or "daYyE-QRXg2MBrX1E1lUmJ1hMR-GEmyrdUiUnv3dWLY"
 TOKEN_PROCESS_ID = TOKEN_PROCESS_ID or "daYyE-QRXg2MBrX1E1lUmJ1hMR-GEmyrdUiUnv3dWLY"
+TOKEN_FOR_COMPUTATION = 2
  
 function setProcessID(nodeProcessId, dataProcessId, tokenProcessId)
   NODE_PROCESS_ID = nodeProcessId
@@ -29,6 +30,7 @@ function replyError(request, errmsg)
   elseif type(errmsg) ~= "string" then
     errstring = require("json").encode(errmsg)
   end 
+  print("Action: " .. action .. " Error:" .. errstring)
   ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Error = errstring})
 end
 
@@ -41,6 +43,7 @@ function replySuccess(request, data)
   elseif type(data) ~= "string" then
     datastring = require("json").encode(data)
   end
+  print("Action:" .. action .. " Data:" .. datastring)
   ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Data = datastring})
 end
 
