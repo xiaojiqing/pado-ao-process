@@ -1,8 +1,8 @@
 import {message, result} from "@permaweb/aoconnect"
 import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
-import {getSigner, getWalletAddress} from "./utils"
+import {getSigner, getWalletAddress, getTag} from "./utils"
 import {testRegistry as registerData, testDelete as deleteData} from "./dataregistry"
-import {registerAllNodes, deleteAllNodes} from "./noderegistry"
+import {registerAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
 
 async function transferTokenToTask(quantity: string, signer: any) {
     let action = "Transfer"
@@ -17,10 +17,17 @@ async function transferTokenToTask(quantity: string, signer: any) {
         ]
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "process": TOKEN_PROCESS,
         "message": msgId,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     console.log("transfer result: ", Messages[0].Data)
 }
 async function testSubmit(dataId: string, nodes: string[], signer: any) {
@@ -45,11 +52,18 @@ async function testSubmit(dataId: string, nodes: string[], signer: any) {
         "data": inputData
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "process": TASK_PROCESS,
         "message": msgId,
     });
     
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     // console.log(Messages)
     const address = await getWalletAddress()
     console.log(address)
@@ -70,10 +84,17 @@ async function testGetTasks(action: string, signer: any) {
         ],
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "process": TASK_PROCESS,
         "message": msgId,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     return Messages[0].Data
 }
 
@@ -103,10 +124,17 @@ async function testDeleteCompletedTask(taskId: string, signer:any) {
         ],
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "process": TASK_PROCESS,
         "message": msgId,
-    });
+    })
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     return Messages[0].Data
 }
 async function getExpectedMessage(Messages: any[]) {
@@ -136,11 +164,18 @@ async function testReportResult(node:string, taskId:string, signer:any) {
         "data": computeResult
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "process": TASK_PROCESS,
         "message": msgId,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
     let Message = await getExpectedMessage(Messages)
+    if (getTag(Message, "Error")) {
+        throw getTag(Message, "Error")
+    }
     return Message.Data
 }
 async function testReportAllResult(nodes: string[], taskId: string, signer: any) {
@@ -161,11 +196,18 @@ async function testBalance(address: string, signer: any) {
         ]
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "process": TOKEN_PROCESS,
         "message": msgId,
     });
 
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     console.log("Balance: ", Messages[0].Data)
     return Messages[0].Data
 }
@@ -179,13 +221,20 @@ async function testAllowance(signer: any) {
             {"name": "Action", "value": action},
         ]
     });
-    let Messages = await result({
+    let Result = await result({
         "process": TASK_PROCESS,
         "message": msgId,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     // console.log(Messages)
-    console.log("allowance: ", Messages.Messages[0].Data)
-    return Messages.Messages[0].Data
+    console.log("allowance: ", Messages[0].Data)
+    return Messages[0].Data
 }
 
 function sleep(ms: number) {
@@ -197,6 +246,8 @@ async function main() {
     let address = await getWalletAddress()
     const nodes = ["js_aos1", "js_aos2", "js_aos3"]
 
+    await testAddWhiteList(address, signer)
+    await testGetWhiteList(signer)
     await registerAllNodes(nodes, signer);
 
     let dataId = await registerData(signer)
@@ -224,8 +275,14 @@ async function main() {
     await deleteAllNodes(nodes, signer);
     console.log(new Date())
     await testAllowance(signer)
+    await testRemoveWhiteList(address, signer)
 
     await testBalance(address, signer)
     await testBalance(TASK_PROCESS,signer)
 }
-main()
+main().then((msg) => {
+    console.log("then: ", msg)
+})
+.catch((e) => {
+    console.log("catch: ", e)
+})

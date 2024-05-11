@@ -30,3 +30,13 @@ export const getWalletAddress = async () => {
     const address = arweave.wallets.getAddress(wallet);
     return address;
 }
+
+export const getTag = (Message: any, Tag: string) => {
+    const Tags = Message.Tags
+    for (let theTag of Tags) {
+        if (theTag.name === Tag) {
+            return theTag.value
+        }
+    }
+    return null
+}

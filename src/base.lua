@@ -2,6 +2,9 @@ NODE_PROCESS_ID = NODE_PROCESS_ID or "Vlq4jWP6PLRo0Msjnxp8-vg9HalZv9e8tiz13OTK3g
 DATA_PROCESS_ID = DATA_PROCESS_ID or "daYyE-QRXg2MBrX1E1lUmJ1hMR-GEmyrdUiUnv3dWLY"
 TOKEN_PROCESS_ID = TOKEN_PROCESS_ID or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 TOKEN_FOR_COMPUTATION = 1 
+
+RESTRICT_NODE_REGISTRY = false 
+NODE_REGISTRY_MANAGER = NODE_REGISTRY_MANAGER or ""
  
 function setProcessID(nodeProcessId, dataProcessId, tokenProcessId)
   NODE_PROCESS_ID = nodeProcessId
@@ -19,6 +22,19 @@ end
 
 function setTokenProcess(tokenProcessId)
   TOKEN_PROCESS_ID = tokenProcessId
+end
+
+function setNodeRegistryManager(manager)
+  NODE_REGISTRY_MANAGER = manager
+end
+
+function indexOf(list, item)
+  for index, value in ipairs(list) do
+    if value == item then
+      return index
+    end
+  end
+  return nil
 end
 
 function replyError(request, errmsg)

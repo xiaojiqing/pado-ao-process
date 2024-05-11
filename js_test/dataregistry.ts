@@ -1,6 +1,6 @@
 import {message, result} from "@permaweb/aoconnect"
 import {DATA_PROCESS} from "./constants"
-import {getSigner} from "./utils"
+import {getSigner, getTag} from "./utils"
 
 export async function testRegistry(signer: any) {
     let action = "Register"
@@ -23,10 +23,17 @@ export async function testRegistry(signer: any) {
         "data": encSks
     });
     
-    let {Messages} = await result({
+    let Result = await result({
         "process": DATA_PROCESS,
         "message": msgId,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     // console.log(Messages)
     // console.log(Messages[0].Tags)
 
@@ -45,10 +52,17 @@ async function testGetDataById(dataId: string, signer: any) {
         ],
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "process": DATA_PROCESS,
         "message": msgId,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     return Messages[0].Data
 }
 
@@ -63,10 +77,17 @@ async function testAllData(signer: any) {
         ],
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "process": DATA_PROCESS,
         "message": msgId,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     return Messages[0].Data
 }
 
@@ -82,10 +103,17 @@ export async function testDelete(dataId: string, signer: any) {
         ],
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "process": DATA_PROCESS,
         "message": msgId,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     return Messages[0].Data
 }
 export async function main() {

@@ -1,7 +1,69 @@
 Nodes = Nodes or {}
+WhiteList = WhiteList or {}
+
 function getNodeKey(msg)
   return msg.Tags.Name
 end
+
+Handlers.add(
+  "addWhiteList",
+  Handlers.utils.hasMatchingTag("Action", "AddWhiteList"),
+  function (msg)
+    if msg.Tags.Address == nil then
+      replyError(msg, "Address is required")
+      return
+    end
+
+    if msg.From ~= NODE_REGISTRY_MANAGER then
+      replyError(msg, "Forbitten to operate white list")
+      return
+    end
+
+    local address = msg.Tags.Address
+    local index = indexOf(WhiteList, address)
+    if index ~= nil then
+      replyError(msg, "Already added")
+      return
+    end
+
+    table.insert(WhiteList, address)
+    replySuccess(msg, "Added successfully")
+  end
+)
+
+Handlers.add(
+  "getWhiteList",
+  Handlers.utils.hasMatchingTag("Action", "GetWhiteList"),
+  function (msg)
+    replySuccess(msg, WhiteList)
+  end
+)
+
+Handlers.add(
+  "removeWhiteList",
+  Handlers.utils.hasMatchingTag("Action", "RemoveWhiteList"),
+  function (msg)
+    if msg.Tags.Address == nil then
+      replyError(msg, "Address is required")
+      return
+    end
+
+    if msg.From ~= NODE_REGISTRY_MANAGER then
+      replyError(msg, "Forbitten to operate white list")
+      return
+    end
+
+    local address = msg.Tags.Address
+    local index = indexOf(WhiteList, address)
+    if index == nil then
+      replyError(msg, "Not found in white list")
+      return
+    end
+
+    table.remove(WhiteList, index)
+    replySuccess(msg, "remove successfully")
+  end
+)
 
 Handlers.add(
   "register",
@@ -20,6 +82,13 @@ Handlers.add(
     if msg.Tags.Desc == nil then
       replyError(msg, "Desc is required")
       return
+    end
+
+    if RESTRICT_NODE_REGISTRY then
+      if indexOf(WhiteList, msg.From) == nil then
+        replyError(msg, "Not allowed to register node " .. "by " .. msg.From)
+        return
+      end
     end
 
     local nodeKey = getNodeKey(msg)

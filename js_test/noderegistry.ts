@@ -1,7 +1,80 @@
 import {message, result} from "@permaweb/aoconnect"
 import {NODE_PROCESS} from "./constants"
-import {getSigner} from "./utils"
+import {getSigner, getTag} from "./utils"
 
+export async function testAddWhiteList(address: string, signer: any) {
+    let action = "AddWhiteList"
+    let msgId = await message({
+        "process": NODE_PROCESS,
+        "signer": signer,
+        "tags": [
+            {"name": "Action", "value": action},
+            {"name": "Address", "value": address},
+        ]
+    })
+
+    let Result = await result({
+        "message": msgId,
+        "process": NODE_PROCESS,
+    })
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    return Messages[0].Data
+}
+
+export async function testGetWhiteList(signer: any) {
+    let action = "GetWhiteList"
+    let msgId = await message({
+        "process": NODE_PROCESS,
+        "signer": signer,
+        "tags": [
+            {"name": "Action", "value": action},
+        ],
+    })
+
+    let Result = await result({
+        "message": msgId,
+        "process": NODE_PROCESS,
+    })
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    console.log("white list: ", Messages[0].Data)
+    return Messages[0].Data
+}
+
+export async function testRemoveWhiteList(address: string, signer: any) {
+    let action = "RemoveWhiteList"
+    let msgId = await message({
+        "process": NODE_PROCESS,
+        "signer": signer,
+        "tags": [
+            {"name": "Action", "value": action},
+            {"name": "Address", "value": address},
+        ]
+    })
+    let Result = await result({
+        "message": msgId,
+        "process": NODE_PROCESS,
+    })
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    return Messages[0].Data
+}
 async function testRegistry(name: string, signer: any) {
     let action = "Register"
     let publicKey = "public key"
@@ -18,10 +91,17 @@ async function testRegistry(name: string, signer: any) {
         "data": publicKey
     });
 
-    let {Messages} = await result({
+    let Result = await result({
         "message": msgId,
         "process": NODE_PROCESS,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     // console.log("register res: ", Messages);
     return Messages[0].Data
 }
@@ -35,10 +115,17 @@ async function testGetAllProcess(signer: any) {
             {"name": "Action", "value": action},
         ]
     });
-    let {Messages} = await result({
+    let Result = await result({
         "message": msgId,
         "process": NODE_PROCESS,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     // console.log("all process: ", Messages)
     return Messages[0].Data
 }
@@ -54,10 +141,17 @@ async function testGetNodeByName(name: string, signer: any) {
             {"name": "Name", "value": name},
         ]
     });
-    let {Messages} = await result({
+    let Result = await result({
         "message": msgId,
         "process": NODE_PROCESS,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     return Messages[0].Data
 }
 async function testDelete(name: string, signer: any) {
@@ -71,10 +165,17 @@ async function testDelete(name: string, signer: any) {
             {"name": "Name", "value": name},
         ],
     });
-    let {Messages} = await result({
+    let Result = await result({
         "message": msgId,
         "process": NODE_PROCESS,
     });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
     return Messages[0].Data
 }
 
