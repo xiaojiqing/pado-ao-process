@@ -1,6 +1,11 @@
 CompletedTasks = CompletedTasks or {}
 PendingTasks = PendingTasks or {}
-Allowances = Allowances or {}
+FreeAllowances = FreeAllowances or {}
+LockedAllowances = LockedAllowances or {}
+
+CreditNotice = CreditNotice or {}
+DebitNotice = DebitNotice or {}
+
 
 local bint = require('.bint')(256)
 
@@ -49,10 +54,13 @@ Handlers.add(
   function (msg)
     local sender = msg.Sender
     local quantity = msg.Quantity
-    --print(msg.Tags.Action .. " " .. sender .. " " .. quantity)
 
-    Allowances[sender] = Allowances[sender] or "0"
-    Allowances[sender] = tostring(bint.__add(Allowances[sender], quantity))
+    local creditNotice = "Receive " .. quantity .. " tokens from " .. sender
+    CreditNotice[sender] = CreditNotice[sender] or {}
+    table.insert(CreditNotice[sender], creditNotice)
+
+    FreeAllowances[sender] = FreeAllowances[sender] or "0"
+    FreeAllowances[sender] = tostring(bint.__add(FreeAllowances[sender], quantity))
   end
 )
 
@@ -62,9 +70,12 @@ Handlers.add(
   function (msg)
     local recipient = msg.Recipient
     local quantity = msg.Quantity
-    --print(msg.Tags.Action .. " " .. recipient .. " " .. quantity)
+
+    local debitNotice =  "Send " .. quantity .. " token to ".. recipient
+    DebitNotice[recipient] = DebitNotice[recipient] or {}
+    table.insert(DebitNotice[recipient], debitNotice)
     
-    Allowances[recipient] = tostring(bint.__sub(Allowances[recipient], quantity))
+    LockedAllowances[recipient] = tostring(bint.__sub(LockedAllowances[recipient], quantity))
   end
 ) 
 
@@ -72,10 +83,17 @@ Handlers.add(
   "allowance",
   Handlers.utils.hasMatchingTag("Action", "Allowance"),
   function (msg)
-    local allowance = "0"
-    if Allowances[msg.From] ~= nil then
-      allowance = Allowances[msg.From]
+    local freeAllowance = "0"
+    local lockedAllowance = "0"
+    if FreeAllowances[msg.From] ~= nil then
+      freeAllowance = FreeAllowances[msg.From]
     end
+
+    if LockedAllowances[msg.From] ~= nil then
+      lockedAllowance = LockedAllowances[msg.From]
+    end
+
+    local allowance = {free = freeAllowance, locked = lockedAllowance}
     replySuccess(msg, allowance)
   end
 )
@@ -114,7 +132,7 @@ Handlers.add(
       return
     end
 
-    if Allowances[msg.From] == nil then
+    if FreeAllowances[msg.From] == nil then
       replyError(msg, "Please transfer sufficient token to " .. ao.id)
       return
     end
@@ -160,7 +178,12 @@ Handlers.add(
 
     local theTask = PendingTasks[taskKey]
     if theTask.nodeVerified and theTask.dataVerified then
-      if bint.__le(theTask.requiredTokens, Allowances[spender]) then
+      FreeAllowances[spender] = FreeAllowances[spender] or "0"
+      if bint.__le(theTask.requiredTokens, FreeAllowances[spender]) then
+        FreeAllowances[spender] = tostring(bint.__sub(FreeAllowances[spender], theTask.requiredTokens))
+        LockedAllowances[spender] = LockedAllowances[spender] or "0"
+        LockedAllowances[spender] = tostring(bint.__add(LockedAllowances[spender], theTask.requiredTokens))
+
         PendingTasks[taskKey].msg = nil
         replySuccess(originMsg, "submit success")
       else
@@ -207,7 +230,12 @@ Handlers.add(
 
     local theTask = PendingTasks[taskKey]
     if theTask.nodeVerified and theTask.dataVerified then
-      if bint.__le(theTask.requiredTokens, Allowances[spender]) then
+      FreeAllowances[spender] = FreeAllowances[spender] or "0"
+      if bint.__le(theTask.requiredTokens, FreeAllowances[spender]) then
+        FreeAllowances[spender] = tostring(bint.__sub(FreeAllowances[spender], theTask.requiredTokens))
+        LockedAllowances[spender] = LockedAllowances[spender] or "0"
+        LockedAllowances[spender] = tostring(bint.__add(LockedAllowances[spender], theTask.requiredTokens))
+
         PendingTasks[taskKey].msg = nil
         replySuccess(originMsg, "submit success")
       else
