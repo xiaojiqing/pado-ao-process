@@ -37,7 +37,7 @@ function count(map)
 end
 
 function calculateRequiredTokens(computeNodeCount, dataPrice)
-  local computationCost = bint(TOKEN_FOR_COMPUTATION)
+  local computationCost = bint(COMPUTATION_PRICE)
   local totalCost = bint.__mul(computationCost, computeNodeCount)
   totalCost = tostring(bint.__add(totalCost, dataPrice))
   return totalCost
@@ -285,7 +285,7 @@ Handlers.add(
     if notReportedCount == 0 then
       local theTask = PendingTasks[taskKey]
       for _, recipient in pairs(theTask.tokenRecipients) do
-          ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = recipient, Quantity = tostring(TOKEN_FOR_COMPUTATION)}})
+          ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = recipient, Quantity = tostring(COMPUTATION_PRICE)}})
       end
 
       ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = theTask.dataProvider, Quantity = tostring(theTask.dataPrice)}})
