@@ -112,31 +112,6 @@ async function testGetAllTasks(signer: any) {
     let allTasks =  await testGetTasks("GetAllTasks", signer)
     console.log(`allTasks: ${allTasks}`)
 }
-async function testDeleteCompletedTask(taskId: string, signer:any) {
-    let action = "DeleteCompletedTaskById"
-
-    let msgId = await message({
-        "process": TASK_PROCESS,
-        "signer": signer,
-        "tags": [
-            {"name": "Action", "value": action},
-            {"name": "TaskId", "value": taskId},
-        ],
-    });
-
-    let Result = await result({
-        "process": TASK_PROCESS,
-        "message": msgId,
-    })
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    return Messages[0].Data
-}
 async function getExpectedMessage(Messages: any[]) {
     let address = await getWalletAddress()
     console.log("address ", address)
@@ -270,7 +245,6 @@ async function main() {
     await testGetCompletedTasks(signer)
     await testGetAllTasks(signer)
 
-    await testDeleteCompletedTask(taskId, signer);
     await deleteData(dataId, signer);
     await deleteAllNodes(nodes, signer);
     console.log(new Date())

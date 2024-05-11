@@ -336,24 +336,3 @@ Handlers.add(
     replySuccess(msg, allTasks)
   end
 )
-Handlers.add(
-  "deleteCompletedTaskById",
-  Handlers.utils.hasMatchingTag("Action", "DeleteCompletedTaskById"),
-  function (msg)
-    if msg.Tags.TaskId == nil then
-      replyError(msg, "TaskId is required")
-      return
-    end
-
-    local taskKey = getExistingTaskKey(msg)
-    local task = CompletedTasks[taskKey]
-    if task == nil then
-      replyError(msg, "CompletedTask " .. taskKey .. " not exist")
-      return
-    end
-    CompletedTasks[taskKey] = nil
-
-    replySuccess(msg, "deleted")
-  end
-)
-
