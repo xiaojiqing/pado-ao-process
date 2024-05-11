@@ -148,6 +148,12 @@ async function testReportResult(node:string, taskId:string, signer:any) {
     }
     let Messages = Result.Messages
     let Message = await getExpectedMessage(Messages)
+    if (Message == null) {
+        for (let msg of Messages) {
+            console.log(msg)
+            console.log(msg.Tags)
+        }
+    }
     if (getTag(Message, "Error")) {
         throw getTag(Message, "Error")
     }
@@ -211,6 +217,32 @@ async function testAllowance(signer: any) {
     console.log("allowance: ", Messages[0].Data)
     return Messages[0].Data
 }
+async function testWithdraw(quantity: string, signer: any) {
+    let action = "Withdraw"
+
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": signer,
+        "tags": [
+            {"name": "Action", "value": action},
+            {"name": "Quantity", "value": quantity},
+        ]
+    });
+    let Result = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    })
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    let Message = await getExpectedMessage(Messages)
+    console.log("withdraw: ", Message.Data)
+    return Message.Data
+}
 
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
@@ -237,22 +269,31 @@ async function main() {
     let taskId = await testSubmit(dataId, nodes, signer)
     console.log(`task id: ${taskId}`)
 
-    await sleep(3000)
+    await sleep(5000)
 
     await testGetPendingTasks(signer)
 
     await testReportAllResult(nodes, taskId, signer)
+    await sleep(5000)
+
     await testGetCompletedTasks(signer)
     await testGetAllTasks(signer)
 
     await deleteData(dataId, signer);
     await deleteAllNodes(nodes, signer);
     console.log(new Date())
-    await testAllowance(signer)
+    let allowance = await testAllowance(signer)
     await testRemoveWhiteList(address, signer)
 
     await testBalance(address, signer)
     await testBalance(TASK_PROCESS,signer)
+
+    let freeAllowance = JSON.parse(allowance).free
+    if (freeAllowance !== "0") {
+        await testWithdraw(freeAllowance, signer)
+        await testBalance(address, signer)
+        await testBalance(TASK_PROCESS, signer)
+    }
 }
 main().then((msg) => {
     console.log("then: ", msg)

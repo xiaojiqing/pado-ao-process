@@ -6,8 +6,14 @@ LockedAllowances = LockedAllowances or {}
 CreditNotice = CreditNotice or {}
 DebitNotice = DebitNotice or {}
 
+DebitActions = DebitActions or {}
+
 
 local bint = require('.bint')(256)
+
+function getDebitActionKey(sender, recipient, quantity)
+  return recipient
+end
 
 function GetInitialTaskKey(msg)
   return msg.Id
@@ -70,12 +76,21 @@ Handlers.add(
   function (msg)
     local recipient = msg.Recipient
     local quantity = msg.Quantity
+    local debitActionKey = getDebitActionKey(ao.id, recipient, quantity)
 
-    local debitNotice =  "Send " .. quantity .. " token to ".. recipient
+    local debitNotice =  "Send " .. quantity .. " token to ".. recipient .. " " .. DebitActions[debitActionKey]
     DebitNotice[recipient] = DebitNotice[recipient] or {}
     table.insert(DebitNotice[recipient], debitNotice)
     
-    LockedAllowances[recipient] = tostring(bint.__sub(LockedAllowances[recipient], quantity))
+    if DebitActions[debitActionKey] == "Withdraw" then
+      -- print("withdraw " .. quantity .. " tokens")
+      FreeAllowances[recipient] = tostring(bint.__sub(FreeAllowances[recipient], quantity))
+    elseif DebitActions[debitActionKey] == "ReportResult" then
+      -- print("report result " .. quantity .. " tokens")
+      LockedAllowances[recipient] = tostring(bint.__sub(LockedAllowances[recipient], quantity))
+    else
+      -- print("not find debit action: " .. debitActionKey)
+    end
   end
 ) 
 
@@ -95,6 +110,27 @@ Handlers.add(
 
     local allowance = {free = freeAllowance, locked = lockedAllowance}
     replySuccess(msg, allowance)
+  end
+)
+
+Handlers.add(
+  "withdraw",
+  Handlers.utils.hasMatchingTag("Action", "Withdraw"),
+  function (msg)
+    if msg.Tags.Quantity == nil then
+      replyError(msg, "Quantity is required")
+      return
+    end
+
+    local freeAllowance = FreeAllowances[msg.From] or "0"
+    if bint.__le(msg.Tags.Quantity, freeAllowance) then
+      local debitActionKey = getDebitActionKey(ao.id, msg.From, msg.Tags.Quantity)
+      DebitActions[debitActionKey] = "Withdraw" 
+      ao.send({Target = TOKEN_PROCESS_ID, Action = "Transfer", Recipient = msg.From, Quantity = msg.Tags.Quantity})
+      replySuccess(msg, "withdraw " .. msg.Tags.Quantity .. " tokens successfully")
+    else
+      replyError(msg, "insuffice free allowance")
+    end
   end
 )
 
@@ -313,9 +349,13 @@ Handlers.add(
     if notReportedCount == 0 then
       local theTask = PendingTasks[taskKey]
       for _, recipient in pairs(theTask.tokenRecipients) do
+          local debitActionKey = getDebitActionKey(ao.id, recipient, tostring(COMPUTATION_PRICE))
+          DebitActions[debitActionKey] = "ReportResult" 
           ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = recipient, Quantity = tostring(COMPUTATION_PRICE)}})
       end
 
+      local debitActionKey = getDebitActionKey(ao.id, theTask.dataProvider, tostring(theTask.dataPrice))
+      DebitActions[debitActionKey] = "ReportResult" 
       ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = theTask.dataProvider, Quantity = tostring(theTask.dataPrice)}})
       CompletedTasks[taskKey] = PendingTasks[taskKey]
       CompletedTasks[taskKey].computeNodeMap = nil
