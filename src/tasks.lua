@@ -124,7 +124,7 @@ Handlers.add(
       return
     end
 
-    if UnfinishedTasks[msg.from] ~= nil then
+    if UnfinishedTasks[msg.From] ~= nil then
       replyError(msg, "pending tasks exist, please withdraw later")
       return
     end

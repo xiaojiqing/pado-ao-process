@@ -269,6 +269,19 @@ async function testWithdraw(quantity: string, signer: any) {
     return Message.Data
 }
 
+async function withdraw(address: string, signer: any) {
+    await testBalance(address, signer)
+    await testBalance(TASK_PROCESS,signer)
+
+    let allowance = await testAllowance(signer)
+    let freeAllowance = JSON.parse(allowance).free
+    if (freeAllowance !== "0") {
+        await testWithdraw(freeAllowance, signer)
+        await testBalance(address, signer)
+        await testBalance(TASK_PROCESS, signer)
+    }
+}
+
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -310,18 +323,10 @@ async function main() {
     await deleteData(dataId, signer);
     await deleteAllNodes(nodes, signer);
     console.log(new Date())
-    let allowance = await testAllowance(signer)
     await testRemoveWhiteList(address, signer)
 
-    await testBalance(address, signer)
-    await testBalance(TASK_PROCESS,signer)
+    await withdraw(address, signer)
 
-    let freeAllowance = JSON.parse(allowance).free
-    if (freeAllowance !== "0") {
-        await testWithdraw(freeAllowance, signer)
-        await testBalance(address, signer)
-        await testBalance(TASK_PROCESS, signer)
-    }
     return "finished"
 }
 main().then((msg) => {
