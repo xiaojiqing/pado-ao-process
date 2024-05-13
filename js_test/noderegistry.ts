@@ -78,7 +78,7 @@ export async function testRemoveWhiteList(address: string, signer: any) {
 async function testRegistry(name: string, signer: any) {
     let action = "Register"
     let publicKey = "public key"
-    let desc = "desciption"
+    let desc = Date() 
 
     let msgId = await message({
         "process": NODE_PROCESS,

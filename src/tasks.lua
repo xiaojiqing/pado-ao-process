@@ -233,8 +233,12 @@ Handlers.add(
         PendingTasks[taskKey].msg = nil
         replySuccess(originMsg, "submit success")
       else
-        PendingTasks[taskKey] = nil
-        replyError(originMsg, "Insufficient Balance")
+        local verificationError = "Insufficient Balance"
+        PendingTasks[taskKey].verificationError = verificationError
+        PendingTasks[taskKey].msg = nil
+        CompletedTasks[taskKey] = PendingTasks[taskKey]
+
+        replyError(originMsg, verificationError)
       end
     end
   end
@@ -249,9 +253,12 @@ Handlers.add(
     local errorMsg = errorMap.errorMsg
     if PendingTasks[taskKey] ~= nil then
       local originMsg = PendingTasks[taskKey].msg
-      PendingTasks[taskKey] = nil
+      local verificationError = "Verify compute nodes error: " .. errorMsg
+      PendingTasks[taskKey].verificationError = verificationError
+      PendingTasks[taskKey].msg = nil
+      CompletedTasks[taskKey] = PendingTasks[taskKey]
 
-      replyError(originMsg, "Verify compute nodes error: " .. errorMsg)
+      replyError(originMsg, verificationError)
     end
   end
 )
@@ -285,8 +292,12 @@ Handlers.add(
         PendingTasks[taskKey].msg = nil
         replySuccess(originMsg, "submit success")
       else
-        PendingTasks[taskKey] = nil
-        replyError(originMsg, "Insufficient Balance")
+        local verificationError = "Insufficient Balance"
+        PendingTasks[taskKey].verificationError = verificationError
+        PendingTasks[taskKey].msg = nil
+        CompletedTasks[taskKey] = PendingTasks[taskKey]
+
+        replyError(originMsg, verificationError)
       end
     end
   end
@@ -301,9 +312,12 @@ Handlers.add(
     local errorMsg = errorMap.errorMsg
     if PendingTasks[taskKey] ~= nil then
       local originMsg = PendingTasks[taskKey].msg
-      PendingTasks[taskKey] = nil
+      local verificationError = "Verify data error: " .. errorMsg
+      PendingTasks[taskKey].verificationError = verificationError
+      PendingTasks[taskKey].msg = nil
+      CompletedTasks[taskKey] = PendingTasks[taskKey]
 
-      replyError(originMsg, "Verify data error: " .. errorMsg)
+      replyError(originMsg, verificationError)
     end
   end
 )

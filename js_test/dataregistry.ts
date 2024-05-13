@@ -4,7 +4,7 @@ import {getSigner, getTag} from "./utils"
 
 export async function testRegistry(signer: any) {
     let action = "Register"
-    let dataTag = "data tag"
+    let dataTag = Date() 
     let price = JSON.stringify({"price": 1, "symbol": "AOCRED"})
     let encSks = "enc private key"
     let nonce = "a nonce"

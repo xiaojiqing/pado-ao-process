@@ -33,7 +33,7 @@ async function transferTokenToTask(quantity: string, signer: any) {
 async function testSubmit(dataId: string, nodes: string[], signer: any) {
     let action = "Submit"
     let taskType = "task type"
-    let inputData = "input data"
+    let inputData = Date() 
     let computeLimit = "200"
     let memoryLimit = "300"
     let encodedNodes = JSON.stringify(nodes)
