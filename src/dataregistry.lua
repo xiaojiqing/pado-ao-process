@@ -73,7 +73,7 @@ Handlers.add(
 
     local dataKey = getExistingDataKey(msg)
     if AllData[dataKey] == nil then
-      replyError(msg, "can not data by " .. dataKey)
+      replyError(msg, "can not find data by " .. dataKey)
       return
     end
 

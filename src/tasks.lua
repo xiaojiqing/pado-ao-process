@@ -10,6 +10,14 @@ DebitActions = DebitActions or {}
 -- (key, value) => (submitter, [taskKey])
 UnfinishedTasks = UnfinishedTasks or {}
 
+function removeUnfinishedTask(spender, taskKey)
+  local index = indexOf(UnfinishedTasks[spender], taskKey)
+  print("remove unfinished task " .. spender .. " " .. taskKey .. " " .. index)
+  table.remove(UnfinishedTasks[spender], index)
+  if #UnfinishedTasks[spender] == 0 then
+    UnfinishedTasks[spender] = nil
+  end
+end
 
 local bint = require('.bint')(256)
 
@@ -237,6 +245,8 @@ Handlers.add(
         PendingTasks[taskKey].verificationError = verificationError
         PendingTasks[taskKey].msg = nil
         CompletedTasks[taskKey] = PendingTasks[taskKey]
+        PendingTasks[taskKey] = nil
+        removeUnfinishedTask(spender, taskKey)
 
         replyError(originMsg, verificationError)
       end
@@ -257,6 +267,9 @@ Handlers.add(
       PendingTasks[taskKey].verificationError = verificationError
       PendingTasks[taskKey].msg = nil
       CompletedTasks[taskKey] = PendingTasks[taskKey]
+      local spender = PendingTasks[taskKey].from
+      PendingTasks[taskKey] = nil
+      removeUnfinishedTask(spender, taskKey)
 
       replyError(originMsg, verificationError)
     end
@@ -296,6 +309,8 @@ Handlers.add(
         PendingTasks[taskKey].verificationError = verificationError
         PendingTasks[taskKey].msg = nil
         CompletedTasks[taskKey] = PendingTasks[taskKey]
+        PendingTasks[taskKey] = nil
+        removeUnfinishedTask(spender, taskKey)
 
         replyError(originMsg, verificationError)
       end
@@ -316,6 +331,9 @@ Handlers.add(
       PendingTasks[taskKey].verificationError = verificationError
       PendingTasks[taskKey].msg = nil
       CompletedTasks[taskKey] = PendingTasks[taskKey]
+      local spender = PendingTasks[taskKey].from
+      PendingTasks[taskKey] = nil
+      removeUnfinishedTask(spender, taskKey)
 
       replyError(originMsg, verificationError)
     end
@@ -384,12 +402,7 @@ Handlers.add(
       CompletedTasks[taskKey] = PendingTasks[taskKey]
       CompletedTasks[taskKey].computeNodeMap = nil
       PendingTasks[taskKey] = nil
-
-      local index = indexOf(UnfinishedTasks[theTask.from], taskKey)
-      table.remove(UnfinishedTasks[theTask.from], index)
-      if #UnfinishedTasks[theTask.from] == 0 then
-        UnfinishedTasks[theTask.from] = nil
-      end
+      removeUnfinishedTask(theTask.from, taskKey)
     end
     replySuccess(msg, taskKey)
   end

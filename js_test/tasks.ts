@@ -4,6 +4,12 @@ import {getSigner, getWalletAddress, getTag} from "./utils"
 import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
 import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
 
+interface ClearInfo {
+    whiteList: boolean,
+    node: boolean,
+    data: boolean,
+}
+
 async function transferTokenToTask(quantity: string, signer: any) {
     let action = "Transfer"
 
@@ -294,28 +300,34 @@ async function withdraw(address: string, signer: any) {
     }
 }
 
-async function clear(signer: any) {
-    let validAddresses = await testGetWhiteList(signer)
-    console.log(typeof validAddresses, validAddresses)
-    let whiteList = JSON.parse(validAddresses)
-    for (const address of whiteList) {
-        await testRemoveWhiteList(address, signer)
+async function clear(clearInfo: ClearInfo, signer: any) {
+    if (clearInfo.whiteList) {
+        let validAddresses = await testGetWhiteList(signer)
+        console.log(typeof validAddresses, validAddresses)
+        let whiteList = JSON.parse(validAddresses)
+        for (const address of whiteList) {
+            await testRemoveWhiteList(address, signer)
+        }
     }
 
-    let registeredNodes = await testGetAllNodes(signer)
-    console.log("registeredNodes", typeof registeredNodes, registeredNodes)
-    let nodes = JSON.parse(registeredNodes) 
-    let nodeNames = []
-    for (const node of nodes) {
-        nodeNames.push(node.name)
+    if (clearInfo.node) {
+        let registeredNodes = await testGetAllNodes(signer)
+        console.log("registeredNodes", typeof registeredNodes, registeredNodes)
+        let nodes = JSON.parse(registeredNodes) 
+        let nodeNames = []
+        for (const node of nodes) {
+            nodeNames.push(node.name)
+        }
+        await deleteAllNodes(nodeNames, signer);
     }
-    await deleteAllNodes(nodeNames, signer);
 
-    let registeredData = await testAllData(signer)
-    console.log("registeredData", typeof registeredData, registeredData)
-    let allData = JSON.parse(registeredData)
-    for (const data of allData) {
-        await deleteData(data.id, signer);
+    if (clearInfo.data) {
+        let registeredData = await testAllData(signer)
+        console.log("registeredData", typeof registeredData, registeredData)
+        let allData = JSON.parse(registeredData)
+        for (const data of allData) {
+            await deleteData(data.id, signer);
+        }
     }
 }
 
@@ -327,7 +339,8 @@ async function main() {
     const signer = await getSigner()
     let address = await getWalletAddress()
     const nodes = ["js_aos1", "js_aos2", "js_aos3"]
-    await clear(signer)
+    let clearInfo = {"whiteList": true, "node": true, "data": true}
+    await clear(clearInfo, signer)
 
     await testAddWhiteList(address, signer)
     await testGetWhiteList(signer)
@@ -340,6 +353,8 @@ async function main() {
     await testBalance(TASK_PROCESS, signer)
     await transferTokenToTask("5", signer)
 
+    // clearInfo = {"whiteList": false, "node": true, "data": false}
+    // await clear(clearInfo, signer)
     await sleep(5000)
 
     let taskId = await testSubmit(dataId, nodes, signer)
