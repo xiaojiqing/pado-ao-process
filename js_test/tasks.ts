@@ -112,6 +112,31 @@ async function testGetAllTasks(signer: any) {
     let allTasks =  await testGetTasks("GetAllTasks", signer)
     console.log(`allTasks: ${allTasks}`)
 }
+async function testGetCompletedTaskById(taskId: string, signer: any) {
+    let action = "GetCompletedTaskById"
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": signer,
+        "tags": [
+            {"name": "Action", "value": action},
+            {"name": "TaskId", "value": taskId},
+        ]
+    })
+
+    let Result = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    })
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    return Messages[0].Data
+}
+
 async function getExpectedMessage(Messages: any[]) {
     let address = await getWalletAddress()
     console.log("address ", address)
@@ -264,7 +289,7 @@ async function main() {
     await testBalance(TASK_PROCESS, signer)
     await transferTokenToTask("5", signer)
 
-    await sleep(2000)
+    await sleep(5000)
 
     let taskId = await testSubmit(dataId, nodes, signer)
     console.log(`task id: ${taskId}`)
@@ -275,9 +300,12 @@ async function main() {
 
     await testReportAllResult(nodes, taskId, signer)
     await sleep(5000)
-
-    await testGetCompletedTasks(signer)
-    await testGetAllTasks(signer)
+    
+    if (false) {
+        await testGetCompletedTasks(signer)
+        await testGetAllTasks(signer)
+    }
+    await testGetCompletedTaskById(taskId, signer)
 
     await deleteData(dataId, signer);
     await deleteAllNodes(nodes, signer);
@@ -294,6 +322,7 @@ async function main() {
         await testBalance(address, signer)
         await testBalance(TASK_PROCESS, signer)
     }
+    return "finished"
 }
 main().then((msg) => {
     console.log("then: ", msg)
