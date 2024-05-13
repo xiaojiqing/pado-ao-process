@@ -66,7 +66,7 @@ async function testGetDataById(dataId: string, signer: any) {
     return Messages[0].Data
 }
 
-async function testAllData(signer: any) {
+export async function testAllData(signer: any) {
     let action = "AllData"
 
     let msgId = await message({

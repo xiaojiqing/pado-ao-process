@@ -1,8 +1,8 @@
 import {message, result} from "@permaweb/aoconnect"
 import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
 import {getSigner, getWalletAddress, getTag} from "./utils"
-import {testRegistry as registerData, testDelete as deleteData} from "./dataregistry"
-import {registerAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
+import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
+import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
 
 async function transferTokenToTask(quantity: string, signer: any) {
     let action = "Transfer"
@@ -101,16 +101,19 @@ async function testGetTasks(action: string, signer: any) {
 async function testGetPendingTasks(signer: any) {
     let pendingTasks =  await testGetTasks("GetPendingTasks", signer)
     console.log(`pendingTasks: ${pendingTasks}`)
+    return pendingTasks
 }
 
 async function testGetCompletedTasks(signer: any) {
     let completedTasks =  await testGetTasks("GetCompletedTasks", signer)
     console.log(`completedTasks: ${completedTasks}`)
+    return completedTasks
 }
 
 async function testGetAllTasks(signer: any) {
     let allTasks =  await testGetTasks("GetAllTasks", signer)
     console.log(`allTasks: ${allTasks}`)
+    return allTasks
 }
 async function testGetCompletedTaskById(taskId: string, signer: any) {
     let action = "GetCompletedTaskById"
@@ -141,11 +144,14 @@ async function getExpectedMessage(Messages: any[]) {
     let address = await getWalletAddress()
     console.log("address ", address)
     // console.log("messages ", Messages)
+    let targets = []
     for (let msg of Messages) {
+        targets.push(msg.Target)
         if (msg.Target === address) {
             return msg;
         }
     }
+    console.log(targets)
     return null
 }
 
@@ -184,10 +190,16 @@ async function testReportResult(node:string, taskId:string, signer:any) {
     }
     return Message.Data
 }
-async function testReportAllResult(nodes: string[], taskId: string, signer: any) {
-    for (const node of nodes) {
-        let res = await testReportResult(node, taskId, signer)
-        console.log(`${node} result: ${res}`)
+async function testReportAllResult(taskId: string, signer: any) {
+    let pendingTasks = await testGetPendingTasks(signer)
+    let pendingTasks2 = JSON.parse(pendingTasks)
+
+    let pendingTask = pendingTasks2[taskId]
+    if (pendingTask.nodeVerified && pendingTask.dataVerified) {
+        for (const node in pendingTask.computeNodeMap) {
+            let res = await testReportResult(node, taskId, signer)
+            console.log(`${node} result: ${res}`)
+        }
     }
 }
 async function testBalance(address: string, signer: any) {
@@ -282,6 +294,31 @@ async function withdraw(address: string, signer: any) {
     }
 }
 
+async function clear(signer: any) {
+    let validAddresses = await testGetWhiteList(signer)
+    console.log(typeof validAddresses, validAddresses)
+    let whiteList = JSON.parse(validAddresses)
+    for (const address of whiteList) {
+        await testRemoveWhiteList(address, signer)
+    }
+
+    let registeredNodes = await testGetAllNodes(signer)
+    console.log("registeredNodes", typeof registeredNodes, registeredNodes)
+    let nodes = JSON.parse(registeredNodes) 
+    let nodeNames = []
+    for (const node of nodes) {
+        nodeNames.push(node.name)
+    }
+    await deleteAllNodes(nodeNames, signer);
+
+    let registeredData = await testAllData(signer)
+    console.log("registeredData", typeof registeredData, registeredData)
+    let allData = JSON.parse(registeredData)
+    for (const data of allData) {
+        await deleteData(data.id, signer);
+    }
+}
+
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -290,6 +327,7 @@ async function main() {
     const signer = await getSigner()
     let address = await getWalletAddress()
     const nodes = ["js_aos1", "js_aos2", "js_aos3"]
+    await clear(signer)
 
     await testAddWhiteList(address, signer)
     await testGetWhiteList(signer)
@@ -309,16 +347,29 @@ async function main() {
 
     await sleep(5000)
 
-    await testGetPendingTasks(signer)
+    let pendingTasks = await testGetPendingTasks(signer)
+    let pendingTasks2 = JSON.parse(pendingTasks)
+    let taskIds = []
+    for (const task in pendingTasks2) {
+        let theTask = pendingTasks2[task]
+        if (theTask.nodeVerified && theTask.dataVerified) {
+            taskIds.push(task)
+        }
+    }
+    console.log("taskIds ", taskIds)
 
-    await testReportAllResult(nodes, taskId, signer)
-    await sleep(5000)
+    for (const taskId of taskIds) {
+        await testReportAllResult(taskId, signer)
+        await sleep(5000)
+    }
     
     if (false) {
         await testGetCompletedTasks(signer)
         await testGetAllTasks(signer)
     }
-    await testGetCompletedTaskById(taskId, signer)
+    for (const taskId of taskIds) {
+        await testGetCompletedTaskById(taskId, signer)
+    }
 
     await deleteData(dataId, signer);
     await deleteAllNodes(nodes, signer);

@@ -105,7 +105,7 @@ async function testRegistry(name: string, signer: any) {
     // console.log("register res: ", Messages);
     return Messages[0].Data
 }
-async function testGetAllProcess(signer: any) {
+export async function testGetAllNodes(signer: any) {
     let action = "Nodes"
     
     let msgId = await message({
@@ -206,7 +206,7 @@ export async function main() {
     let nodes = ["js_aos", "js_aos2", "js_aos3"];
     await registerAllNodes(nodes, signer)
 
-    let allProcess = await testGetAllProcess(signer);
+    let allProcess = await testGetAllNodes(signer);
     console.log("allProcess: ", allProcess)
 
     await getAllNodesByName(nodes, signer)
