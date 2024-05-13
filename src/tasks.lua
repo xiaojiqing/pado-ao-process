@@ -7,6 +7,8 @@ CreditNotice = CreditNotice or {}
 DebitNotice = DebitNotice or {}
 
 DebitActions = DebitActions or {}
+-- (key, value) => (submitter, [taskKey])
+UnfinishedTasks = UnfinishedTasks or {}
 
 
 local bint = require('.bint')(256)
@@ -122,6 +124,11 @@ Handlers.add(
       return
     end
 
+    if UnfinishedTasks[msg.from] ~= nil then
+      replyError(msg, "pending tasks exist, please withdraw later")
+      return
+    end
+
     local freeAllowance = FreeAllowances[msg.From] or "0"
     if bint.__le(msg.Tags.Quantity, freeAllowance) then
       local debitActionKey = getDebitActionKey(ao.id, msg.From, msg.Tags.Quantity)
@@ -188,6 +195,9 @@ Handlers.add(
     PendingTasks[taskKey].nodeVerified = false
     PendingTasks[taskKey].dataVerified = false
     PendingTasks[taskKey].msg = msg
+
+    UnfinishedTasks[msg.From] = UnfinishedTasks[msg.From] or {}
+    table.insert(UnfinishedTasks[msg.From], taskKey)
 
     ao.send({Target = NODE_PROCESS_ID, Tags = {Action = "GetComputeNodes", ComputeNodes = msg.Tags.ComputeNodes, UserData = taskKey}}) 
     ao.send({Target = DATA_PROCESS_ID, Tags = {Action = "GetDataById", DataId = msg.Tags.DataId, UserData = taskKey}})
@@ -360,6 +370,12 @@ Handlers.add(
       CompletedTasks[taskKey] = PendingTasks[taskKey]
       CompletedTasks[taskKey].computeNodeMap = nil
       PendingTasks[taskKey] = nil
+
+      local index = indexOf(UnfinishedTasks[theTask.from], taskKey)
+      table.remove(UnfinishedTasks[theTask.from], index)
+      if #UnfinishedTasks[theTask.from] == 0 then
+        UnfinishedTasks[theTask.from] = nil
+      end
     end
     replySuccess(msg, taskKey)
   end
