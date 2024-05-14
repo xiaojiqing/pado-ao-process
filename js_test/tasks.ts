@@ -389,7 +389,9 @@ async function main() {
     console.log(new Date())
     await testRemoveWhiteList(address, signer)
 
-    await withdraw(address, signer)
+    if (false) {
+        await withdraw(address, signer)
+	}
 
     return "finished"
 }

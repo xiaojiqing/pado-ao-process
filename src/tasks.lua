@@ -92,15 +92,8 @@ Handlers.add(
     DebitNotice[recipient] = DebitNotice[recipient] or {}
     table.insert(DebitNotice[recipient], debitNotice)
     
-    if DebitActions[debitActionKey] == "Withdraw" then
-      -- print("withdraw " .. quantity .. " tokens")
-      FreeAllowances[recipient] = tostring(bint.__sub(FreeAllowances[recipient], quantity))
-    elseif DebitActions[debitActionKey] == "ReportResult" then
-      -- print("report result " .. quantity .. " tokens")
-      LockedAllowances[recipient] = tostring(bint.__sub(LockedAllowances[recipient], quantity))
-    else
-      -- print("not find debit action: " .. debitActionKey)
-    end
+    -- print("report result " .. quantity .. " tokens")
+    LockedAllowances[recipient] = tostring(bint.__sub(LockedAllowances[recipient], quantity))
   end
 ) 
 
@@ -120,32 +113,6 @@ Handlers.add(
 
     local allowance = {free = freeAllowance, locked = lockedAllowance}
     replySuccess(msg, allowance)
-  end
-)
-
-Handlers.add(
-  "withdraw",
-  Handlers.utils.hasMatchingTag("Action", "Withdraw"),
-  function (msg)
-    if msg.Tags.Quantity == nil then
-      replyError(msg, "Quantity is required")
-      return
-    end
-
-    if UnfinishedTasks[msg.From] ~= nil then
-      replyError(msg, "pending tasks exist, please withdraw later")
-      return
-    end
-
-    local freeAllowance = FreeAllowances[msg.From] or "0"
-    if bint.__le(msg.Tags.Quantity, freeAllowance) then
-      local debitActionKey = getDebitActionKey(ao.id, msg.From, msg.Tags.Quantity)
-      DebitActions[debitActionKey] = "Withdraw" 
-      ao.send({Target = TOKEN_PROCESS_ID, Action = "Transfer", Recipient = msg.From, Quantity = msg.Tags.Quantity})
-      replySuccess(msg, "withdraw " .. msg.Tags.Quantity .. " tokens successfully")
-    else
-      replyError(msg, "insuffice free allowance")
-    end
   end
 )
 
