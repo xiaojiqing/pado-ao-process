@@ -403,7 +403,7 @@ Handlers.add(
   "getCompletedTasks",
   Handlers.utils.hasMatchingTag("Action", "GetCompletedTasks"),
   function (msg)
-    replySuccess(msg, CompletedTasks)
+    replySuccess(msg, getTaskList(CompletedTasks))
   end
 )
 
