@@ -343,10 +343,14 @@ Handlers.add(
   "getPendingTasks",
   Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
   function (msg)
+    local pendingTasks = {}
     for taskId, task in pairs(PendingTasks) do
+      if task.nodeVerified and task.dataVerified then
+        table.insert(pendingTasks, task)
+      end
       --print(taskId .. " node:" .. tostring(task.nodeVerified) .. " data: " .. tostring(task.dataVerified))
     end
-    replySuccess(msg, PendingTasks)
+    replySuccess(msg, pendingTasks)
   end
 )
 

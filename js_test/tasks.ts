@@ -200,11 +200,12 @@ async function testReportAllResult(taskId: string, signer: any) {
     let pendingTasks = await testGetPendingTasks(signer)
     let pendingTasks2 = JSON.parse(pendingTasks)
 
-    let pendingTask = pendingTasks2[taskId]
-    if (pendingTask.nodeVerified && pendingTask.dataVerified) {
-        for (const node in pendingTask.computeNodeMap) {
-            let res = await testReportResult(node, taskId, signer)
-            console.log(`${node} result: ${res}`)
+    for (let pendingTask of pendingTasks2) {
+        if (pendingTask.id === taskId) {
+            for (const node in pendingTask.computeNodeMap) {
+                let res = await testReportResult(node, taskId, signer)
+                console.log(`${node} result: ${res}`)
+            }
         }
     }
 }
@@ -365,11 +366,8 @@ async function main() {
     let pendingTasks = await testGetPendingTasks(signer)
     let pendingTasks2 = JSON.parse(pendingTasks)
     let taskIds = []
-    for (const task in pendingTasks2) {
-        let theTask = pendingTasks2[task]
-        if (theTask.nodeVerified && theTask.dataVerified) {
-            taskIds.push(task)
-        }
+    for (const theTask of pendingTasks2) {
+        taskIds.push(theTask.id)
     }
     console.log("taskIds ", taskIds)
 
