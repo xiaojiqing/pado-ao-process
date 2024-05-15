@@ -1,6 +1,6 @@
 import {message, result} from "@permaweb/aoconnect"
-import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
-import {getSigner, getWalletAddress, getTag} from "./utils"
+import {PROCESS_MANAGER, TOKEN_PROCESS, TASK_PROCESS} from "./constants"
+import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getWalletAddress, getFullWallet, getTag} from "./utils"
 import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
 import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
 
@@ -8,6 +8,29 @@ interface ClearInfo {
     whiteList: boolean,
     node: boolean,
     data: boolean,
+}
+async function registerProcess(processName: string, signer: any) {
+    let action = "RegisterProcess"
+    let msgId = await message({
+        "process": PROCESS_MANAGER,
+        "signer": signer,
+        "tags": [
+            {"name": "Action", "value": action},
+            {"name": "Name", "value": processName},
+        ]
+    })
+    let Result = await result({
+        "process": PROCESS_MANAGER,
+        "message": msgId,
+    });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    console.log("register process: ", Messages[0].Data)
 }
 
 async function transferTokenToTask(quantity: string, signer: any) {
@@ -71,7 +94,7 @@ async function testSubmit(dataId: string, nodes: string[], signer: any) {
         throw getTag(Messages[0], "Error")
     }
     // console.log(Messages)
-    const address = await getWalletAddress()
+    const address = await getWalletAddress("wallet.json")
     console.log(address)
     for (const msg of Messages) {
         if (msg.Target === address) {
@@ -146,8 +169,7 @@ async function testGetCompletedTaskById(taskId: string, signer: any) {
     return Messages[0].Data
 }
 
-async function getExpectedMessage(Messages: any[]) {
-    let address = await getWalletAddress()
+async function getExpectedMessage(Messages: any[], address: string) {
     console.log("address ", address)
     // console.log("messages ", Messages)
     let targets = []
@@ -161,13 +183,13 @@ async function getExpectedMessage(Messages: any[]) {
     return null
 }
 
-async function testReportResult(node:string, taskId:string, signer:any) {
+async function testReportResult(node:string, taskId:string, computeWallet: ComputationProviderWallet) {
     let action = "ReportResult"
     let computeResult = "compute result"
 
     let msgId = await message({
         "process": TASK_PROCESS,
-        "signer": signer,
+        "signer": computeWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
             {"name": "TaskId", "value": taskId},
@@ -184,7 +206,7 @@ async function testReportResult(node:string, taskId:string, signer:any) {
         console.log(Result.Error)
     }
     let Messages = Result.Messages
-    let Message = await getExpectedMessage(Messages)
+    let Message = await getExpectedMessage(Messages, computeWallet.address)
     if (Message == null) {
         for (let msg of Messages) {
             console.log(msg)
@@ -196,14 +218,14 @@ async function testReportResult(node:string, taskId:string, signer:any) {
     }
     return Message.Data
 }
-async function testReportAllResult(taskId: string, signer: any) {
-    let pendingTasks = await testGetPendingTasks(signer)
+async function testReportAllResult(taskId: string, computeWallet: ComputationProviderWallet) {
+    let pendingTasks = await testGetPendingTasks(computeWallet.signer)
     let pendingTasks2 = JSON.parse(pendingTasks)
 
     for (let pendingTask of pendingTasks2) {
         if (pendingTask.id === taskId) {
             for (const node in pendingTask.computeNodeMap) {
-                let res = await testReportResult(node, taskId, signer)
+                let res = await testReportResult(node, taskId, computeWallet)
                 console.log(`${node} result: ${res}`)
             }
         }
@@ -236,6 +258,12 @@ async function testBalance(address: string, signer: any) {
     console.log("Balance: ", Messages[0].Data)
     return Messages[0].Data
 }
+
+async function testWalletBalance(wallet: Wallet) {
+    let balance = await testBalance(wallet.address, wallet.signer)
+    console.log(wallet.kind, balance)
+}
+
 async function testAllowance(signer: any) {
     let action = "Allowance"
 
@@ -261,12 +289,12 @@ async function testAllowance(signer: any) {
     console.log("allowance: ", Messages[0].Data)
     return Messages[0].Data
 }
-async function testWithdraw(quantity: string, signer: any) {
+async function testWithdraw(quantity: string, resultWallet: ResultReceiverWallet) {
     let action = "Withdraw"
 
     let msgId = await message({
         "process": TASK_PROCESS,
-        "signer": signer,
+        "signer": resultWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
             {"name": "Quantity", "value": quantity},
@@ -283,51 +311,52 @@ async function testWithdraw(quantity: string, signer: any) {
     if (getTag(Messages[0], "Error")) {
         throw getTag(Messages[0], "Error")
     }
-    let Message = await getExpectedMessage(Messages)
+    let Message = await getExpectedMessage(Messages, resultWallet.address)
     console.log("withdraw: ", Message.Data)
     return Message.Data
 }
 
-async function withdraw(address: string, signer: any) {
-    await testBalance(address, signer)
-    await testBalance(TASK_PROCESS,signer)
+async function withdraw(resultWallet: ResultReceiverWallet) {
+    let address = resultWallet.address
+    await testBalance(address, resultWallet.signer)
+    await testBalance(TASK_PROCESS,resultWallet.signer)
 
-    let allowance = await testAllowance(signer)
+    let allowance = await testAllowance(resultWallet.signer)
     let freeAllowance = JSON.parse(allowance).free
     if (freeAllowance !== "0") {
-        await testWithdraw(freeAllowance, signer)
-        await testBalance(address, signer)
-        await testBalance(TASK_PROCESS, signer)
+        await testWithdraw(freeAllowance, resultWallet)
+        await testBalance(address, resultWallet.signer)
+        await testBalance(TASK_PROCESS, resultWallet.signer)
     }
 }
 
-async function clear(clearInfo: ClearInfo, signer: any) {
+async function clear(clearInfo: ClearInfo, computeWallet: ComputationProviderWallet, dataWallet: DataProviderWallet) {
     if (clearInfo.whiteList) {
-        let validAddresses = await testGetWhiteList(signer)
+        let validAddresses = await testGetWhiteList(computeWallet.signer)
         console.log(typeof validAddresses, validAddresses)
         let whiteList = JSON.parse(validAddresses)
         for (const address of whiteList) {
-            await testRemoveWhiteList(address, signer)
+            await testRemoveWhiteList(address, computeWallet.signer)
         }
     }
 
     if (clearInfo.node) {
-        let registeredNodes = await testGetAllNodes(signer)
+        let registeredNodes = await testGetAllNodes(computeWallet.signer)
         console.log("registeredNodes", typeof registeredNodes, registeredNodes)
         let nodes = JSON.parse(registeredNodes) 
         let nodeNames = []
         for (const node of nodes) {
             nodeNames.push(node.name)
         }
-        await deleteAllNodes(nodeNames, signer);
+        await deleteAllNodes(nodeNames, computeWallet.signer);
     }
 
     if (clearInfo.data) {
-        let registeredData = await testAllData(signer)
+        let registeredData = await testAllData(dataWallet.signer)
         console.log("registeredData", typeof registeredData, registeredData)
         let allData = JSON.parse(registeredData)
         for (const data of allData) {
-            await deleteData(data.id, signer);
+            await deleteData(data.id, dataWallet.signer);
         }
     }
 }
@@ -337,33 +366,44 @@ function sleep(ms: number) {
 }
 
 async function main() {
-    const signer = await getSigner()
-    let address = await getWalletAddress()
+    const dataWallet = await getFullWallet("DataProvider", "data_provider.json") as DataProviderWallet
+    const computeWallet = await getFullWallet("ComputationProvider", "computation_provider.json") as ComputationProviderWallet
+    const resultWallet = await getFullWallet("ResultReceiver", "result_receiver.json") as ResultReceiverWallet
+    console.log(dataWallet)
+    console.log(computeWallet)
+    console.log(resultWallet)
+    await registerProcess(dataWallet.kind, dataWallet.signer)
+    await registerProcess(computeWallet.kind, computeWallet.signer)
+    await registerProcess(resultWallet.kind, resultWallet.signer)
+
+    await testWalletBalance(dataWallet)
+    await testWalletBalance(computeWallet)
+    await testWalletBalance(resultWallet)
+    await testBalance(TASK_PROCESS, resultWallet.signer)
+    await testAllowance(resultWallet.signer)
+
     const nodes = ["js_aos1", "js_aos2", "js_aos3"]
     let clearInfo = {"whiteList": true, "node": true, "data": true}
-    await clear(clearInfo, signer)
+    await clear(clearInfo, computeWallet, dataWallet)
 
-    await testAddWhiteList(address, signer)
-    await testGetWhiteList(signer)
-    await registerAllNodes(nodes, signer);
+    await testAddWhiteList(computeWallet.address, computeWallet.signer)
+    await testGetWhiteList(computeWallet.signer)
+    await registerAllNodes(nodes, computeWallet.signer);
 
-    let dataId = await registerData(signer)
+    let dataId = await registerData(dataWallet.signer)
 
-    await testAllowance(signer)
-    await testBalance(address, signer)
-    await testBalance(TASK_PROCESS, signer)
-    await transferTokenToTask("5", signer)
+    await transferTokenToTask("5", resultWallet.signer)
 
     // clearInfo = {"whiteList": false, "node": true, "data": false}
     // await clear(clearInfo, signer)
     await sleep(5000)
 
-    let taskId = await testSubmit(dataId, nodes, signer)
+    let taskId = await testSubmit(dataId, nodes, resultWallet.signer)
     console.log(`task id: ${taskId}`)
 
     await sleep(5000)
 
-    let pendingTasks = await testGetPendingTasks(signer)
+    let pendingTasks = await testGetPendingTasks(computeWallet.signer)
     let pendingTasks2 = JSON.parse(pendingTasks)
     let taskIds = []
     for (const theTask of pendingTasks2) {
@@ -372,26 +412,30 @@ async function main() {
     console.log("taskIds ", taskIds)
 
     for (const taskId of taskIds) {
-        await testReportAllResult(taskId, signer)
+        await testReportAllResult(taskId, computeWallet)
         await sleep(5000)
     }
     
     if (false) {
-        await testGetCompletedTasks(signer)
-        await testGetAllTasks(signer)
+        await testGetCompletedTasks(resultWallet.signer)
+        await testGetAllTasks(resultWallet.signer)
     }
     for (const taskId of taskIds) {
-        await testGetCompletedTaskById(taskId, signer)
+        await testGetCompletedTaskById(taskId, resultWallet.signer)
     }
 
-    await deleteData(dataId, signer);
-    await deleteAllNodes(nodes, signer);
-    console.log(new Date())
-    await testRemoveWhiteList(address, signer)
+    await deleteData(dataId, dataWallet.signer);
+    await deleteAllNodes(nodes, computeWallet.signer);
+    await testRemoveWhiteList(computeWallet.address, computeWallet.signer)
 
-    if (false) {
-        await withdraw(address, signer)
-	}
+    if (true) {
+        await withdraw(resultWallet)
+    }
+    await testWalletBalance(dataWallet)
+    await testWalletBalance(computeWallet)
+    await testWalletBalance(resultWallet)
+    await testBalance(TASK_PROCESS, resultWallet.signer)
+    await testAllowance(resultWallet.signer)
 
     return "finished"
 }

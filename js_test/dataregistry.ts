@@ -117,7 +117,7 @@ export async function testDelete(dataId: string, signer: any) {
     return Messages[0].Data
 }
 export async function main() {
-    const signer = await getSigner()
+    const signer = await getSigner("wallet.json")
 
     let dataId = await testRegistry(signer)
     console.log("dataId: ", dataId)

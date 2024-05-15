@@ -201,7 +201,7 @@ export async function deleteAllNodes(names: string[], signer: any) {
 }
 
 export async function main() {
-    let signer = await getSigner();
+    let signer = await getSigner("wallet.json");
 
     let nodes = ["js_aos", "js_aos2", "js_aos3"];
     await registerAllNodes(nodes, signer)
