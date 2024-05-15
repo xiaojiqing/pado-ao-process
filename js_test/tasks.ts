@@ -1,5 +1,5 @@
 import {message, result} from "@permaweb/aoconnect"
-import {PROCESS_MANAGER, TOKEN_PROCESS, TASK_PROCESS} from "./constants"
+import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
 import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getWalletAddress, getFullWallet, getTag} from "./utils"
 import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
 import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
@@ -9,30 +9,6 @@ interface ClearInfo {
     node: boolean,
     data: boolean,
 }
-async function registerProcess(processName: string, signer: any) {
-    let action = "RegisterProcess"
-    let msgId = await message({
-        "process": PROCESS_MANAGER,
-        "signer": signer,
-        "tags": [
-            {"name": "Action", "value": action},
-            {"name": "Name", "value": processName},
-        ]
-    })
-    let Result = await result({
-        "process": PROCESS_MANAGER,
-        "message": msgId,
-    });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    console.log("register process: ", Messages[0].Data)
-}
-
 async function transferTokenToTask(quantity: string, signer: any) {
     let action = "Transfer"
 
@@ -372,9 +348,6 @@ async function main() {
     console.log(dataWallet)
     console.log(computeWallet)
     console.log(resultWallet)
-    await registerProcess(dataWallet.kind, dataWallet.signer)
-    await registerProcess(computeWallet.kind, computeWallet.signer)
-    await registerProcess(resultWallet.kind, resultWallet.signer)
 
     await testWalletBalance(dataWallet)
     await testWalletBalance(computeWallet)
