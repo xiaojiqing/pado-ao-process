@@ -1,5 +1,10 @@
 CompletedTasks = CompletedTasks or {}
 PendingTasks = PendingTasks or {}
+FreeAllowances = FreeAllowances or {}
+LockedAllowances = LockedAllowances or {}
+
+CreditNotice = CreditNotice or {}
+DebitNotice = DebitNotice or {}
 
 local bint = require('.bint')(256)
 
@@ -35,6 +40,83 @@ function count(map)
   return num
 end
 
+function calculateRequiredTokens(computeNodeCount, dataPrice)
+  local computationCost = bint(COMPUTATION_PRICE)
+  local totalCost = bint.__mul(computationCost, computeNodeCount)
+  totalCost = tostring(bint.__add(totalCost, dataPrice))
+  return totalCost
+end
+
+Handlers.add(
+  "creditNotice",
+  Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
+  function (msg)
+    local sender = msg.Sender
+    local quantity = msg.Quantity
+
+    local creditNotice = "Receive " .. quantity .. " tokens from " .. sender
+    CreditNotice[sender] = CreditNotice[sender] or {}
+    table.insert(CreditNotice[sender], creditNotice)
+
+    FreeAllowances[sender] = FreeAllowances[sender] or "0"
+    FreeAllowances[sender] = tostring(bint.__add(FreeAllowances[sender], quantity))
+  end
+)
+
+Handlers.add(
+  "debitNotice",
+  Handlers.utils.hasMatchingTag("Action", "Debit-Notice"),
+  function (msg)
+    local recipient = msg.Recipient
+    local quantity = msg.Quantity
+
+    local debitNotice =  "Send " .. quantity .. " token to ".. recipient 
+    DebitNotice[recipient] = DebitNotice[recipient] or {}
+    table.insert(DebitNotice[recipient], debitNotice)
+    
+    -- print("report result " .. quantity .. " tokens")
+  end
+) 
+
+Handlers.add(
+  "allowance",
+  Handlers.utils.hasMatchingTag("Action", "Allowance"),
+  function (msg)
+    local freeAllowance = "0"
+    local lockedAllowance = "0"
+    if FreeAllowances[msg.From] ~= nil then
+      freeAllowance = FreeAllowances[msg.From]
+    end
+
+    if LockedAllowances[msg.From] ~= nil then
+      lockedAllowance = LockedAllowances[msg.From]
+    end
+
+    local allowance = {free = freeAllowance, locked = lockedAllowance}
+    replySuccess(msg, allowance)
+  end
+)
+
+Handlers.add(
+  "withdraw",
+  Handlers.utils.hasMatchingTag("Action", "Withdraw"),
+  function (msg)
+    if msg.Tags.Quantity == nil then
+      replyError(msg, "Quantity is required")
+      return
+    end
+
+    local freeAllowance = FreeAllowances[msg.From] or "0"
+    if bint.__le(msg.Tags.Quantity, freeAllowance) then
+      FreeAllowances[msg.From] = tostring(bint.__sub(FreeAllowances[msg.From], msg.Tags.Quantity))
+      ao.send({Target = TOKEN_PROCESS_ID, Action = "Transfer", Recipient = msg.From, Quantity = msg.Tags.Quantity})
+      replySuccess(msg, "withdraw " .. msg.Tags.Quantity .. " tokens successfully")
+    else
+      replyError(msg, "insuffice free allowance")
+    end
+  end
+)
+
 Handlers.add(
   "submit",
   Handlers.utils.hasMatchingTag("Action", "Submit"),
@@ -68,6 +150,14 @@ Handlers.add(
       replyError(msg, "ComputeNodes is required")
       return
     end
+
+    if FreeAllowances[msg.From] == nil then
+      replyError(msg, "Please transfer sufficient token to " .. ao.id)
+      return
+    end
+    local computeNodes = require("json").decode(msg.Tags.ComputeNodes)
+    local computeNodeCount = #computeNodes
+
     local taskKey = GetInitialTaskKey(msg)
     PendingTasks[taskKey] = {}
     PendingTasks[taskKey].id = msg.Id
@@ -76,20 +166,14 @@ Handlers.add(
     PendingTasks[taskKey].computeLimit = msg.Tags.ComputeLimit
     PendingTasks[taskKey].memoryLimit = msg.Tags.MemoryLimit
     PendingTasks[taskKey].computeNodes = msg.Tags.ComputeNodes
+    PendingTasks[taskKey].computeNodeCount = computeNodeCount
     PendingTasks[taskKey].from = msg.From
     PendingTasks[taskKey].nodeVerified = false
     PendingTasks[taskKey].dataVerified = false
-    PendingTasks[taskKey].tokenVerified = false
     PendingTasks[taskKey].msg = msg
 
     ao.send({Target = NODE_PROCESS_ID, Tags = {Action = "GetComputeNodes", ComputeNodes = msg.Tags.ComputeNodes, UserData = taskKey}}) 
     ao.send({Target = DATA_PROCESS_ID, Tags = {Action = "GetDataById", DataId = msg.Tags.DataId, UserData = taskKey}})
-    ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Balance", Recipient = msg.From, UserData = taskKey}})
-
-    --local computeNodeList = require("json").decode(msg.Tags.ComputeNodes)
-    --local computeNodeMap = convertToMap(computeNodeList)
-    --PendingTasks[taskKey].computeNodeMap = computeNodeMap
-    --PendingTasks[taskKey].verifyingNodes = computeNodeList
 
     replySuccess(msg, taskKey)
   end
@@ -100,19 +184,35 @@ Handlers.add(
   Handlers.utils.hasMatchingTag("Action", "GetComputeNodes-Success"),
   function (msg)
     local dataMap = require("json").decode(msg.Data)
+    local dataMap2 = require("json").decode(msg.Data)
     local taskKey = dataMap.userData
     local computeNodeMap = dataMap.data
+    local tokenRecipients = dataMap2.data
+
     local originMsg = PendingTasks[taskKey].msg
+    local spender = PendingTasks[taskKey].from
     PendingTasks[taskKey].computeNodeMap = computeNodeMap
+    PendingTasks[taskKey].tokenRecipients = tokenRecipients
     PendingTasks[taskKey].nodeVerified = true
 
     local theTask = PendingTasks[taskKey]
-    if theTask.nodeVerified and theTask.dataVerified and theTask.tokenVerified then
-      if bint.__le(theTask.dataPrice, theTask.tokenBalance) then
-        ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "TransferFrom", Sender = theTask.from, Recipient = ao.id, Quantity = theTask.dataPrice, UserData = taskKey}})
+    if theTask.nodeVerified and theTask.dataVerified then
+      FreeAllowances[spender] = FreeAllowances[spender] or "0"
+      if bint.__le(theTask.requiredTokens, FreeAllowances[spender]) then
+        FreeAllowances[spender] = tostring(bint.__sub(FreeAllowances[spender], theTask.requiredTokens))
+        LockedAllowances[spender] = LockedAllowances[spender] or "0"
+        LockedAllowances[spender] = tostring(bint.__add(LockedAllowances[spender], theTask.requiredTokens))
+
+        PendingTasks[taskKey].msg = nil
+        replySuccess(originMsg, "submit success")
       else
+        local verificationError = "Insufficient Balance"
+        PendingTasks[taskKey].verificationError = verificationError
+        PendingTasks[taskKey].msg = nil
+        CompletedTasks[taskKey] = PendingTasks[taskKey]
         PendingTasks[taskKey] = nil
-        replyError(originMsg, "Insufficient Balance")
+
+        replyError(originMsg, verificationError)
       end
     end
   end
@@ -127,9 +227,14 @@ Handlers.add(
     local errorMsg = errorMap.errorMsg
     if PendingTasks[taskKey] ~= nil then
       local originMsg = PendingTasks[taskKey].msg
+      local verificationError = "Verify compute nodes error: " .. errorMsg
+      PendingTasks[taskKey].verificationError = verificationError
+      PendingTasks[taskKey].msg = nil
+      CompletedTasks[taskKey] = PendingTasks[taskKey]
+      local spender = PendingTasks[taskKey].from
       PendingTasks[taskKey] = nil
 
-      replyError(originMsg, "Verify compute nodes error: " .. errorMsg)
+      replyError(originMsg, verificationError)
     end
   end
 )
@@ -143,18 +248,33 @@ Handlers.add(
     local data = dataMap.data
     local dataPrice = require("json").decode(data.price)
     local originMsg = PendingTasks[taskKey].msg
+    local computeNodeCount = PendingTasks[taskKey].computeNodeCount
+    local spender = PendingTasks[taskKey].from
+
     PendingTasks[taskKey].dataPrice = dataPrice.price
     PendingTasks[taskKey].priceSymbol = dataPrice.symbol
+    PendingTasks[taskKey].requiredTokens = calculateRequiredTokens(computeNodeCount, dataPrice.price)
     PendingTasks[taskKey].dataVerified = true
     PendingTasks[taskKey].dataProvider = data.from
 
     local theTask = PendingTasks[taskKey]
-    if theTask.nodeVerified and theTask.dataVerified and theTask.tokenVerified then
-      if bint.__le(theTask.dataPrice, theTask.tokenBalance) then
-        ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "TransferFrom", Sender = theTask.from, Recipient = ao.id, Quantity = theTask.dataPrice, UserData = taskKey}})
+    if theTask.nodeVerified and theTask.dataVerified then
+      FreeAllowances[spender] = FreeAllowances[spender] or "0"
+      if bint.__le(theTask.requiredTokens, FreeAllowances[spender]) then
+        FreeAllowances[spender] = tostring(bint.__sub(FreeAllowances[spender], theTask.requiredTokens))
+        LockedAllowances[spender] = LockedAllowances[spender] or "0"
+        LockedAllowances[spender] = tostring(bint.__add(LockedAllowances[spender], theTask.requiredTokens))
+
+        PendingTasks[taskKey].msg = nil
+        replySuccess(originMsg, "submit success")
       else
+        local verificationError = "Insufficient Balance"
+        PendingTasks[taskKey].verificationError = verificationError
+        PendingTasks[taskKey].msg = nil
+        CompletedTasks[taskKey] = PendingTasks[taskKey]
         PendingTasks[taskKey] = nil
-        replyError(originMsg, "Insufficient Balance")
+
+        replyError(originMsg, verificationError)
       end
     end
   end
@@ -169,89 +289,29 @@ Handlers.add(
     local errorMsg = errorMap.errorMsg
     if PendingTasks[taskKey] ~= nil then
       local originMsg = PendingTasks[taskKey].msg
+      local verificationError = "Verify data error: " .. errorMsg
+      PendingTasks[taskKey].verificationError = verificationError
+      PendingTasks[taskKey].msg = nil
+      CompletedTasks[taskKey] = PendingTasks[taskKey]
+      local spender = PendingTasks[taskKey].from
       PendingTasks[taskKey] = nil
 
-      replyError(originMsg, "Verify data error: " .. errorMsg)
+      replyError(originMsg, verificationError)
     end
   end
 )
-
-Handlers.add(
-  "balanceSuccess",
-  Handlers.utils.hasMatchingTag("Action", "Balance-Success"),
-  function (msg)
-    local dataMap = require("json").decode(msg.Data)
-    local taskKey = dataMap.userData
-    local balance = dataMap.data
-    local originMsg = PendingTasks[taskKey].msg
-    PendingTasks[taskKey].tokenBalance = balance
-    PendingTasks[taskKey].tokenVerified = true
-
-    local theTask = PendingTasks[taskKey]
-    if theTask.nodeVerified and theTask.dataVerified and theTask.tokenVerified then
-      if bint.__le(theTask.dataPrice, theTask.tokenBalance) then
-        ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "TransferFrom", Sender = theTask.from, Recipient = ao.id, Quantity = theTask.dataPrice, UserData = taskKey}})
-      else
-        PendingTasks[taskKey] = nil
-        replyError(originMsg, "Insufficient Balance")
-      end
-    end
-  end
-)
-
-Handlers.add(
-  "balanceError",
-  Handlers.utils.hasMatchingTag("Action", "Balance-Error"),
-  function (msg)
-    local errorMap = require("json").decode(msg.Tags.Error)
-    local taskKey = errorMap.userData
-    local errorMsg = errorMap.errorMsg
-    if PendingTasks[taskKey] ~= nil then
-      local originMsg = PendingTasks[taskKey].msg
-      PendingTasks[taskKey] = nil
-
-      replyError(originMsg, "Verify token error: " .. errorMsg)
-    end
-  end
-)
-
-Handlers.add(
-  "transferFromSuccess",
-  Handlers.utils.hasMatchingTag("Action", "TransferFrom-Success"),
-  function (msg)
-    local dataMap = require("json").decode(msg.Data)
-    local taskKey = dataMap.userData
-    local originMsg = PendingTasks[taskKey].msg
-
-    PendingTasks[taskKey].msg = nil
-    replySuccess(originMsg, taskKey)
-  end
-)
-
-Handlers.add(
-  "transferFromError",
-  Handlers.utils.hasMatchingTag("Action", "TransferFrom-Error"),
-  function (msg)
-    local errorMap = require("json").decode(msg.Tags.Error)
-    local taskKey = errorMap.userData
-    local errorMsg = errorMap.errorMsg
-    if PendingTasks[taskKey] ~= nil then
-      local originMsg = PendingTasks[taskKey].msg
-      PendingTasks[taskKey] = nil
-
-      replyError(originMsg, "transfer from error: " .. errorMsg)
-    end
-  end
-)
-    
 Handlers.add(
   "getPendingTasks",
   Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
   function (msg)
+    local pendingTasks = {}
     for taskId, task in pairs(PendingTasks) do
-      print(taskId .. " node:" .. tostring(task.nodeVerified) .. " data: " .. tostring(task.dataVerified) .. " token: " .. tostring(task.tokenVerified))
+      if task.nodeVerified and task.dataVerified then
+        table.insert(pendingTasks, task)
+      end
+      --print(taskId .. " node:" .. tostring(task.nodeVerified) .. " data: " .. tostring(task.dataVerified))
     end
-    replySuccess(msg, PendingTasks)
+    replySuccess(msg, pendingTasks)
   end
 )
 
@@ -292,9 +352,18 @@ Handlers.add(
     PendingTasks[taskKey].result = PendingTasks[taskKey].result or {}
     PendingTasks[taskKey].result[msg.Tags.NodeName] = msg.Data
     PendingTasks[taskKey].computeNodeMap[msg.Tags.NodeName] = nil
-    if count(PendingTasks[taskKey].computeNodeMap) == 0 then
+    local notReportedCount =  count(PendingTasks[taskKey].computeNodeMap)
+    if notReportedCount == 0 then
       local theTask = PendingTasks[taskKey]
-      ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = theTask.dataProvider, Quantity = theTask.dataPrice}})
+      for _, recipient in pairs(theTask.tokenRecipients) do
+
+          LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], tostring(COMPUTATION_PRICE)))
+          ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = recipient, Quantity = tostring(COMPUTATION_PRICE)}})
+      end
+
+      LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], tostring(theTask.dataPrice)))
+      ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = theTask.dataProvider, Quantity = tostring(theTask.dataPrice)}})
+
       CompletedTasks[taskKey] = PendingTasks[taskKey]
       CompletedTasks[taskKey].computeNodeMap = nil
       PendingTasks[taskKey] = nil
@@ -327,7 +396,7 @@ Handlers.add(
   "getCompletedTasks",
   Handlers.utils.hasMatchingTag("Action", "GetCompletedTasks"),
   function (msg)
-    replySuccess(msg, CompletedTasks)
+    replySuccess(msg, getTaskList(CompletedTasks))
   end
 )
 

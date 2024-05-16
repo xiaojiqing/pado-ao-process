@@ -1,6 +1,10 @@
 NODE_PROCESS_ID = NODE_PROCESS_ID or "Vlq4jWP6PLRo0Msjnxp8-vg9HalZv9e8tiz13OTK3gk"
 DATA_PROCESS_ID = DATA_PROCESS_ID or "daYyE-QRXg2MBrX1E1lUmJ1hMR-GEmyrdUiUnv3dWLY"
-TOKEN_PROCESS_ID = TOKEN_PROCESS_ID or "daYyE-QRXg2MBrX1E1lUmJ1hMR-GEmyrdUiUnv3dWLY"
+TOKEN_PROCESS_ID = TOKEN_PROCESS_ID or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
+COMPUTATION_PRICE = 1 
+
+RESTRICT_NODE_REGISTRY = true 
+NODE_REGISTRY_MANAGER = NODE_REGISTRY_MANAGER or ao.env.Process.Owner 
  
 function setProcessID(nodeProcessId, dataProcessId, tokenProcessId)
   NODE_PROCESS_ID = nodeProcessId
@@ -20,6 +24,19 @@ function setTokenProcess(tokenProcessId)
   TOKEN_PROCESS_ID = tokenProcessId
 end
 
+function setNodeRegistryManager(manager)
+  NODE_REGISTRY_MANAGER = manager
+end
+
+function indexOf(list, item)
+  for index, value in ipairs(list) do
+    if value == item then
+      return index
+    end
+  end
+  return nil
+end
+
 function replyError(request, errmsg)
   local action = request.Action .. "-Error"
   local errstring = errmsg
@@ -29,6 +46,7 @@ function replyError(request, errmsg)
   elseif type(errmsg) ~= "string" then
     errstring = require("json").encode(errmsg)
   end 
+  --print("Action: " .. action .. " Error:" .. errstring)
   ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Error = errstring})
 end
 
@@ -41,6 +59,7 @@ function replySuccess(request, data)
   elseif type(data) ~= "string" then
     datastring = require("json").encode(data)
   end
+  --print("Action:" .. action .. " Data:" .. datastring)
   ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Data = datastring})
 end
 

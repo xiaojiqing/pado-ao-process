@@ -28,7 +28,7 @@ Handlers.add(
       elseif dataPrice.symbol == nil then
         replyError(msg, "symbol is missing")
         return
-      elseif dataPrice.symbol ~= "PADO Token" then
+      elseif dataPrice.symbol ~= "AOCRED" then
         replyError(msg, "incorrect price symbol")
         return
       end
@@ -73,7 +73,7 @@ Handlers.add(
 
     local dataKey = getExistingDataKey(msg)
     if AllData[dataKey] == nil then
-      replyError(msg, "can not data by " .. dataKey)
+      replyError(msg, "can not find data by " .. dataKey)
       return
     end
 
