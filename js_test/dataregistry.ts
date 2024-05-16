@@ -1,8 +1,8 @@
 import {message, result} from "@permaweb/aoconnect"
 import {DATA_PROCESS} from "./constants"
-import {getSigner, getTag} from "./utils"
+import {getDataProviderWallet, DataProviderWallet, getTag} from "./utils"
 
-export async function testRegistry(signer: any) {
+export async function testRegistry(dataProviderWallet: DataProviderWallet) {
     let action = "Register"
     let dataTag = Date() 
     let price = JSON.stringify({"price": 1, "symbol": "AOCRED"})
@@ -10,7 +10,7 @@ export async function testRegistry(signer: any) {
 
     let msgId = await message({
         "process": DATA_PROCESS,
-        "signer": signer,
+        "signer": dataProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
             {"name": "DataTag", "value": dataTag},
@@ -36,12 +36,12 @@ export async function testRegistry(signer: any) {
     return Messages[0].Data
 }
 
-async function testGetDataById(dataId: string, signer: any) {
+async function testGetDataById(dataId: string, dataProviderWallet: DataProviderWallet) {
     let action = "GetDataById"
     
     let msgId = await message({
         "process": DATA_PROCESS,
-        "signer": signer,
+        "signer": dataProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
             {"name": "DataId", "value": dataId},
@@ -62,12 +62,12 @@ async function testGetDataById(dataId: string, signer: any) {
     return Messages[0].Data
 }
 
-export async function testAllData(signer: any) {
+export async function testAllData(dataProviderWallet: DataProviderWallet) {
     let action = "AllData"
 
     let msgId = await message({
         "process": DATA_PROCESS,
-        "signer": signer,
+        "signer": dataProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
         ],
@@ -87,12 +87,12 @@ export async function testAllData(signer: any) {
     return Messages[0].Data
 }
 
-export async function testDelete(dataId: string, signer: any) {
+export async function testDelete(dataId: string, dataProviderWallet: DataProviderWallet) {
     let action = "Delete"
 
     let msgId = await message({
         "process": DATA_PROCESS,
-        "signer": signer,
+        "signer": dataProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
             {"name": "DataId", "value": dataId},
@@ -113,18 +113,18 @@ export async function testDelete(dataId: string, signer: any) {
     return Messages[0].Data
 }
 export async function main() {
-    const signer = await getSigner("wallet.json")
+	let dataProviderWallet = await getDataProviderWallet();
 
-    let dataId = await testRegistry(signer)
+    let dataId = await testRegistry(dataProviderWallet)
     console.log("dataId: ", dataId)
 
-    let res = await testGetDataById(dataId, signer)
+    let res = await testGetDataById(dataId, dataProviderWallet)
     console.log(`get data by id: ${res}`)
 
-    res = await testAllData(signer)
+    res = await testAllData(dataProviderWallet)
     console.log(`all data: ${res}`)
 
-    res = await testDelete(dataId, signer)
+    res = await testDelete(dataId, dataProviderWallet)
     console.log(`delete: ${res}`)
 }
 // main()

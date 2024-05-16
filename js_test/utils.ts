@@ -62,6 +62,18 @@ export const getFullWallet = async (walletKind: WalletKind, walletFile: string) 
     return fullWallet
 }
 
+export const getDataProviderWallet = async () => {
+    const dataWallet = await getFullWallet("DataProvider", "data_provider.json") as DataProviderWallet
+	return dataWallet
+}
+export const getComputationProviderWallet = async () => {
+    const computeWallet = await getFullWallet("ComputationProvider", "computation_provider.json") as ComputationProviderWallet
+	return computeWallet
+}
+export const getResultReceiverWallet = async () => {
+    const resultWallet = await getFullWallet("ResultReceiver", "result_receiver.json") as ResultReceiverWallet
+	return resultWallet
+}
 export const getTag = (Message: any, Tag: string) => {
     const Tags = Message.Tags
     for (let theTag of Tags) {

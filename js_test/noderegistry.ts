@@ -1,12 +1,12 @@
 import {message, result} from "@permaweb/aoconnect"
 import {NODE_PROCESS} from "./constants"
-import {getSigner, getTag} from "./utils"
+import {getComputationProviderWallet, getTag, ComputationProviderWallet} from "./utils"
 
-export async function testAddWhiteList(address: string, signer: any) {
+export async function testAddWhiteList(address: string, computationProviderWallet: ComputationProviderWallet) {
     let action = "AddWhiteList"
     let msgId = await message({
         "process": NODE_PROCESS,
-        "signer": signer,
+        "signer": computationProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
             {"name": "Address", "value": address},
@@ -27,11 +27,11 @@ export async function testAddWhiteList(address: string, signer: any) {
     return Messages[0].Data
 }
 
-export async function testGetWhiteList(signer: any) {
+export async function testGetWhiteList(computationProviderWallet: ComputationProviderWallet) {
     let action = "GetWhiteList"
     let msgId = await message({
         "process": NODE_PROCESS,
-        "signer": signer,
+        "signer": computationProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
         ],
@@ -52,11 +52,11 @@ export async function testGetWhiteList(signer: any) {
     return Messages[0].Data
 }
 
-export async function testRemoveWhiteList(address: string, signer: any) {
+export async function testRemoveWhiteList(address: string, computationProviderWallet: ComputationProviderWallet) {
     let action = "RemoveWhiteList"
     let msgId = await message({
         "process": NODE_PROCESS,
-        "signer": signer,
+        "signer": computationProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
             {"name": "Address", "value": address},
@@ -75,14 +75,14 @@ export async function testRemoveWhiteList(address: string, signer: any) {
     }
     return Messages[0].Data
 }
-async function testRegistry(name: string, signer: any) {
+async function testRegistry(name: string, computationProviderWallet:ComputationProviderWallet) {
     let action = "Register"
     let publicKey = "public key"
     let desc = Date() 
 
     let msgId = await message({
         "process": NODE_PROCESS,
-        "signer": signer,
+        "signer": computationProviderWallet.signer,
         "tags" : [
             {"name": "Action", "value": action},
             {"name": "Name", "value": name},
@@ -105,12 +105,12 @@ async function testRegistry(name: string, signer: any) {
     // console.log("register res: ", Messages);
     return Messages[0].Data
 }
-export async function testGetAllNodes(signer: any) {
+export async function testGetAllNodes(computationProviderWallet: ComputationProviderWallet) {
     let action = "Nodes"
     
     let msgId = await message({
         "process": NODE_PROCESS,
-        "signer": signer,
+        "signer": computationProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
         ]
@@ -130,12 +130,12 @@ export async function testGetAllNodes(signer: any) {
     return Messages[0].Data
 }
 
-async function testGetNodeByName(name: string, signer: any) {
+async function testGetNodeByName(name: string, computationProviderWallet: ComputationProviderWallet) {
     let action = "GetNodeByName"
 
     let msgId = await message({
         "process": NODE_PROCESS,
-        "signer": signer,
+        "signer": computationProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
             {"name": "Name", "value": name},
@@ -154,12 +154,12 @@ async function testGetNodeByName(name: string, signer: any) {
     }
     return Messages[0].Data
 }
-async function testDelete(name: string, signer: any) {
+async function testDelete(name: string, computationProviderWallet: ComputationProviderWallet) {
     let action = "Delete"
 
     let msgId = await message({
         "process": NODE_PROCESS,
-        "signer": signer,
+        "signer": computationProviderWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
             {"name": "Name", "value": name},
@@ -179,39 +179,39 @@ async function testDelete(name: string, signer: any) {
     return Messages[0].Data
 }
 
-export async function registerAllNodes(names: string[], signer: any) {
+export async function registerAllNodes(names: string[], computationProviderWallet: ComputationProviderWallet) {
     for (let name of names) {
-        let aos = await testRegistry(name, signer);
+        let aos = await testRegistry(name, computationProviderWallet);
         console.log(`register ${name} result: ${aos}`)
     }
 }
 
-async function getAllNodesByName(names: string[], signer: any) {
+async function getAllNodesByName(names: string[], computationProviderWallet: ComputationProviderWallet) {
     for (let name of names) {
-        let res = await testGetNodeByName(name, signer)
+        let res = await testGetNodeByName(name, computationProviderWallet.signer)
         console.log(`get node by name ${name} result: ${res}`)
     }
 }
 
-export async function deleteAllNodes(names: string[], signer: any) {
+export async function deleteAllNodes(names: string[], computationProviderWallet: ComputationProviderWallet) {
     for (let name of names) {
-        let res = await testDelete(name, signer);
+        let res = await testDelete(name, computationProviderWallet);
         console.log(`delete ${name} result: ${res}`)
     }
 }
 
 export async function main() {
-    let signer = await getSigner("wallet.json");
+	let computationProviderWallet = await getComputationProviderWallet();
 
     let nodes = ["js_aos", "js_aos2", "js_aos3"];
-    await registerAllNodes(nodes, signer)
+    await registerAllNodes(nodes, computationProviderWallet)
 
-    let allProcess = await testGetAllNodes(signer);
+    let allProcess = await testGetAllNodes(computationProviderWallet);
     console.log("allProcess: ", allProcess)
 
-    await getAllNodesByName(nodes, signer)
+    await getAllNodesByName(nodes, computationProviderWallet)
 
-    await deleteAllNodes(nodes, signer)
+    await deleteAllNodes(nodes, computationProviderWallet)
 }
 
 // main()
