@@ -1,5 +1,6 @@
 Nodes = Nodes or {}
 WhiteList = WhiteList or {}
+NodeIndex = NodeIndex or 0
 
 function getNodeKey(msg)
   return msg.Tags.Name
@@ -98,6 +99,8 @@ Handlers.add(
       return
     end
     Nodes[nodeKey] = {}
+    NodeIndex = NodeIndex + 1
+    Nodes[nodeKey].index = tostring(NodeIndex)
     Nodes[nodeKey].name = msg.Tags.Name
     Nodes[nodeKey].publickey = msg.Data
     Nodes[nodeKey].desc = msg.Tags.Desc

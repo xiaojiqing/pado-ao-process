@@ -6,9 +6,7 @@ export async function testRegistry(signer: any) {
     let action = "Register"
     let dataTag = Date() 
     let price = JSON.stringify({"price": 1, "symbol": "AOCRED"})
-    let encSks = "enc private key"
-    let nonce = "a nonce"
-    let encMsg = "ciphertext"
+    let data = "data"
 
     let msgId = await message({
         "process": DATA_PROCESS,
@@ -17,10 +15,8 @@ export async function testRegistry(signer: any) {
             {"name": "Action", "value": action},
             {"name": "DataTag", "value": dataTag},
             {"name": "Price", "value": price},
-            {"name": "Nonce", "value": nonce},
-            {"name": "EncMsg", "value": encMsg},
         ],
-        "data": encSks
+        "data": data
     });
     
     let Result = await result({
