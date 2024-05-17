@@ -34,16 +34,6 @@ Handlers.add(
       end
     end
 
-    if msg.Tags.Nonce == nil then
-      replyError(msg, "Nonce is required")
-      return
-    end
-
-    if msg.Tags.EncMsg == nil then
-      replyError(msg, "EncMsg is required")
-      return
-    end
-
     local dataKey = getInitialDataKey(msg)
     if AllData[dataKey] ~= nil then
       replyError(msg, "already registered")
@@ -54,9 +44,7 @@ Handlers.add(
     AllData[dataKey].id = msg.Id
     AllData[dataKey].dataTag = msg.Tags.DataTag
     AllData[dataKey].price = msg.Tags.Price
-    AllData[dataKey].encSks = msg.Data
-    AllData[dataKey].nonce = msg.Tags.Nonce
-    AllData[dataKey].encMsg = msg.Tags.EncMsg
+    AllData[dataKey].data = msg.Data
     AllData[dataKey].from = msg.From
     replySuccess(msg, msg.Id)
   end

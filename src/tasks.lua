@@ -5,6 +5,7 @@ LockedAllowances = LockedAllowances or {}
 
 CreditNotice = CreditNotice or {}
 DebitNotice = DebitNotice or {}
+TransferErrorNotice = TransferErrorNotice or {}
 
 local bint = require('.bint')(256)
 
@@ -77,6 +78,14 @@ Handlers.add(
     -- print("report result " .. quantity .. " tokens")
   end
 ) 
+
+Handlers.add(
+  "transferError",
+  Handlers.utils.hasMatchingTag("Action", "Transfer-Error"),
+  function (msg)
+    table.insert(TransferErrorNotice, msg.Error)
+  end
+)
 
 Handlers.add(
   "allowance",
