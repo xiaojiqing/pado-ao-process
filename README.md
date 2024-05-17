@@ -89,9 +89,13 @@ The task has the following attributes:
  - **computeLimit**: the compute limit of the task
  - **memoryLimit**: the memory limit of the task
  - **computeNodes**: the nodes which participant in computing
-   
+
+### Get computation price
+   ```bash
+   aos> Send({Target = <Task Manager ID>, Action = "ComputationPrice"})
+   ```
 ###  Submit a task:
-  ```bash
+   ```bash 
   aos> Send({Target = <Task Manager ID>, Action = "Submit", TaskType = <TaskType>, Data = <InputData>, ComputeLimit = <ComputeLimit>, MemoryLimit = <MemoryLimit>, ComputeNodes = <ComputeNodes>})
   ```
   

@@ -54,6 +54,14 @@ function calculateRequiredTokens(computeNodeCount, dataPrice)
 end
 
 Handlers.add(
+  "computationPrice",
+  Handlers.utils.hasMatchingTag("Action", "ComputationPrice"),
+  function (msg)
+    replySuccess(msg, tostring(COMPUTATION_PRICE))
+  end
+)
+
+Handlers.add(
   "creditNotice",
   Handlers.utils.hasMatchingTag("Action", "Credit-Notice"),
   function (msg)
