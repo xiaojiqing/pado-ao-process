@@ -9,6 +9,31 @@ interface ClearInfo {
     node: boolean,
     data: boolean,
 }
+async function testComputationPrice(resultReceiverWallet: ResultReceiverWallet) {
+    let action = "ComputationPrice"
+
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": resultReceiverWallet.signer,
+        "tags": [
+            {"name": "Action", "value": action},
+        ]
+    });
+
+    let Result = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    console.log("computation price: ", Messages[0].Data)
+    return Messages[0].Data
+}
 async function transferTokenToTask(quantity: string, resultReceiverWallet: ResultReceiverWallet) {
     let action = "Transfer"
 
@@ -351,6 +376,7 @@ async function main() {
     await testWalletBalance(resultWallet)
     await testBalance(TASK_PROCESS, resultWallet)
     await testAllowance(resultWallet)
+    await testComputationPrice(resultWallet)
 
     const nodes = ["js_aos1", "js_aos2", "js_aos3"]
     let clearInfo = {"whiteList": true, "node": true, "data": true}

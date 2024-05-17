@@ -1,3 +1,4 @@
+NODE_REGISTRY_MANAGER = NODE_REGISTRY_MANAGER or ao.env.Process.Owner 
 Nodes = Nodes or {}
 WhiteList = WhiteList or {}
 NodeIndex = NodeIndex or 0
@@ -85,11 +86,9 @@ Handlers.add(
       return
     end
 
-    if RESTRICT_NODE_REGISTRY then
-      if indexOf(WhiteList, msg.From) == nil then
-        replyError(msg, "Not allowed to register node " .. "by " .. msg.From)
-        return
-      end
+    if indexOf(WhiteList, msg.From) == nil then
+      replyError(msg, "Not allowed to register node " .. "by " .. msg.From)
+      return
     end
 
     local nodeKey = getNodeKey(msg)

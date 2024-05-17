@@ -1,33 +1,3 @@
-NODE_PROCESS_ID = NODE_PROCESS_ID or "Vlq4jWP6PLRo0Msjnxp8-vg9HalZv9e8tiz13OTK3gk"
-DATA_PROCESS_ID = DATA_PROCESS_ID or "daYyE-QRXg2MBrX1E1lUmJ1hMR-GEmyrdUiUnv3dWLY"
-TOKEN_PROCESS_ID = TOKEN_PROCESS_ID or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
-COMPUTATION_PRICE = 1 
-
-RESTRICT_NODE_REGISTRY = true 
-NODE_REGISTRY_MANAGER = NODE_REGISTRY_MANAGER or ao.env.Process.Owner 
- 
-function setProcessID(nodeProcessId, dataProcessId, tokenProcessId)
-  NODE_PROCESS_ID = nodeProcessId
-  DATA_PROCESS_ID = dataProcessId
-  TOKEN_PROCESS_ID = tokenProcessId
-end
-
-function setNodeProcess(nodeProcessId)
-  NODE_PROCESS_ID = nodeProcessId
-end
-
-function setDataProcess(dataProcessId)
-  DATA_PROCESS_ID = dataProcessId
-end
-
-function setTokenProcess(tokenProcessId)
-  TOKEN_PROCESS_ID = tokenProcessId
-end
-
-function setNodeRegistryManager(manager)
-  NODE_REGISTRY_MANAGER = manager
-end
-
 function indexOf(list, item)
   for index, value in ipairs(list) do
     if value == item then
