@@ -1,3 +1,8 @@
+NODE_PROCESS_ID = NODE_PROCESS_ID or "Vlq4jWP6PLRo0Msjnxp8-vg9HalZv9e8tiz13OTK3gk"
+DATA_PROCESS_ID = DATA_PROCESS_ID or "daYyE-QRXg2MBrX1E1lUmJ1hMR-GEmyrdUiUnv3dWLY"
+TOKEN_PROCESS_ID = TOKEN_PROCESS_ID or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
+COMPUTATION_PRICE = 1 
+
 CompletedTasks = CompletedTasks or {}
 PendingTasks = PendingTasks or {}
 FreeAllowances = FreeAllowances or {}
