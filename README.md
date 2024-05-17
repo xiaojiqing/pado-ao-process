@@ -2,7 +2,7 @@
 PADO AO Process is processes on AO. It mainly manage nodes, data and verifiable confidential computation tasks and results. It also handles computation cost. It includes `Node Registry Process`, `Data Registry Process` and `Task Management Process`.
 
 ## Node Registry Process
-Node Registry Process manages the public keys of computation nodes. It provides the functionality of add, update, delete and query. These operations are allowed only when the caller is in the white list.
+Node Registry Process manages the public keys of PADO Node. It provides the functionality of add, update, delete and query. These operations are allowed only when the caller is in the white list.
 A node has the following attributes:
 - **name**: the name of the node
 - **index**: the index of the node, starting from 1, allocated when registered
@@ -76,11 +76,11 @@ The data has the following attributes:
 
 ###  Delete Data
   ```bash
-  aos> Send({Target = >Data Manager ID>, Action = "Delete", DataId = <Data ID>})
+  aos> Send({Target = <Data Manager ID>, Action = "Delete", DataId = <Data ID>})
   ```
 
 ## Task Management Process
-A task means the process that data consumer submits a request for purchase data, compute nodes operate on the data and provide their computation results, finally data consumer decrypt the data basing on the computation results.
+A task means the process that data user submits a request for purchase data, compute nodes operate on the data and provide their computation results, finally data user decrypt the data basing on the computation results.
 
 The task has the following attributes:
  - **id**: the identity of the task
@@ -132,8 +132,8 @@ The task has the following attributes:
   aos> Send({Target = <Task Manager ID>, Action = "Withdraw", Recipient = <Recipient>, Quantity = <Quantity>})
   ```
 ### Manage Token
-  For now, Pado AO uses AOCRED to incentive data providers and computation nodes. Data consumer should transfer AOCRED tokens to the `Task Management Process` before submiting tasks. In `Task Management Process`, It maintains `FreeAllowances` and `LockedAllowances` to track the tokens of data consumers. It mainly consist of the following steps.
-- **Preparation**: Data consumers transfer AOCRED tokens to this process, which are kept in FreeAllowances.
+  For now, PADO AO uses AOCRED to incentive data providers and PADO Nodes. The quantity of AOCRED tokens received from data user is decided by data price when uploading data. Every PADO Node participanting in the task will get a constant quantity of AOCRED tokens(0.001 AOCRED for now) from data users. Data user should transfer AOCRED tokens to the `Task Management Process` before submiting tasks. In `Task Management Process`, It maintains `FreeAllowances` and `LockedAllowances` to track the tokens of data users. It mainly consist of the following steps.
+- **Preparation**: Data users transfer AOCRED tokens to this process, which are kept in FreeAllowances.
 - **Submit Tasks**: If a task is submitted successfully, AOCRED tokens will be moved from FreeAllowances to LockedAllowances.
-- **Report Results**: If computation nodes finish computing tasks submitted, they will report result. AOCRED tokens will be transfered from this process to computation nodes and data providers. LockedAllowances will be decreased.
-- **Withdraw**: If some tokens is left in FreeAllowances, data consumers can withdraw.
+- **Report Results**: If PADO Nodes finish computing tasks submitted, they will report result. AOCRED tokens will be transfered from this process to PADO Nodes and data providers. LockedAllowances will be decreased.
+- **Withdraw**: If some tokens is left in FreeAllowances, data users can withdraw.
