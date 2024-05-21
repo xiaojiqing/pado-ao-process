@@ -34,15 +34,15 @@ async function testComputationPrice(resultReceiverWallet: ResultReceiverWallet) 
     console.log("computation price: ", Messages[0].Data)
     return Messages[0].Data
 }
-async function transferTokenToTask(quantity: string, resultReceiverWallet: ResultReceiverWallet) {
+async function transferToken(recipient: string, quantity: string, wallet: Wallet) {
     let action = "Transfer"
 
     let msgId = await message({
         "process": TOKEN_PROCESS,
-        "signer": resultReceiverWallet.signer,
+        "signer": wallet.signer,
         "tags": [
             {"name": "Action", "value": action},
-            {"name": "Recipient", "value": TASK_PROCESS},
+            {"name": "Recipient", "value": recipient},
             {"name": "Quantity", "value": quantity},
         ]
     });
@@ -59,6 +59,21 @@ async function transferTokenToTask(quantity: string, resultReceiverWallet: Resul
         throw getTag(Messages[0], "Error")
     }
     console.log("transfer result: ", Messages[0].Data)
+}
+
+async function transferTokenToTask(quantity: string, resultReceiverWallet: ResultReceiverWallet) {
+    await transferToken(TASK_PROCESS, quantity, resultReceiverWallet)
+}
+async function revokeToken(senderWallet: [ComputationProviderWallet, DataProviderWallet], receiverWallet: ResultReceiverWallet) {
+    let computeBalance = await testWalletBalance(senderWallet[0])
+    let dataBalance = await testWalletBalance(senderWallet[1])
+
+    if (computeBalance !== "0") {
+        await transferToken(receiverWallet.address, computeBalance, senderWallet[0])
+    }
+    if (dataBalance !== "0") {
+        await transferToken(receiverWallet.address, dataBalance, senderWallet[1])
+    }
 }
 async function testSubmit(dataId: string, nodes: string[], resultReceiverWallet: ResultReceiverWallet) {
     let action = "Submit"
@@ -260,6 +275,7 @@ async function testBalance(address: string, wallet: Wallet) {
 async function testWalletBalance(wallet: Wallet) {
     let balance = await testBalance(wallet.address, wallet)
     console.log(wallet.kind, balance)
+    return balance
 }
 
 async function testAllowance(resultReceiverWallet: ResultReceiverWallet) {
@@ -426,6 +442,7 @@ async function main() {
 
     if (true) {
         await withdraw(resultWallet)
+        await revokeToken([computeWallet, dataWallet], resultWallet)
     }
     await testWalletBalance(dataWallet)
     await testWalletBalance(computeWallet)
