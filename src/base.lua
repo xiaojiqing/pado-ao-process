@@ -18,7 +18,7 @@ function replyError(request, errmsg)
   elseif type(errmsg) ~= "string" then
     errstring = require("json").encode(errmsg)
   end 
-  print("Action: " .. action .. " Error:" .. errstring)
+  -- print("Action: " .. action .. " Error:" .. errstring)
   ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Error = errstring})
 end
 
@@ -31,7 +31,7 @@ function replySuccess(request, data)
   elseif type(data) ~= "string" then
     datastring = require("json").encode(data)
   end
-  print("Action:" .. action .. " Data:" .. datastring)
+  -- print("Action:" .. action .. " Data:" .. datastring)
   ao.send({Target = request.From, Action = action, ["Message-Id"] = request.Id, Data = datastring})
 end
 
