@@ -1,6 +1,6 @@
 import {message, result} from "@permaweb/aoconnect"
 import {NODE_PROCESS} from "./constants"
-import {getComputationProviderWallet, getTag, ComputationProviderWallet} from "./utils"
+import {getComputationProviderWallet, getExpectedMessage, getTag, ComputationProviderWallet} from "./utils"
 
 export async function testAddWhiteList(address: string, computationProviderWallet: ComputationProviderWallet) {
     let action = "AddWhiteList"
@@ -173,10 +173,11 @@ async function testDelete(name: string, computationProviderWallet: ComputationPr
         console.log(Result.Error)
     }
     let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
+    let Message = await getExpectedMessage(Messages, computationProviderWallet.address)
+    if (getTag(Message, "Error")) {
+        throw getTag(Message, "Error")
     }
-    return Messages[0].Data
+    return Message.Data
 }
 
 export async function registerAllNodes(names: string[], computationProviderWallet: ComputationProviderWallet) {
@@ -201,7 +202,7 @@ export async function deleteAllNodes(names: string[], computationProviderWallet:
 }
 
 export async function main() {
-	let computationProviderWallet = await getComputationProviderWallet();
+    let computationProviderWallet = await getComputationProviderWallet();
 
     let nodes = ["js_aos", "js_aos2", "js_aos3"];
     await registerAllNodes(nodes, computationProviderWallet)

@@ -64,15 +64,15 @@ export const getFullWallet = async (walletKind: WalletKind, walletFile: string) 
 
 export const getDataProviderWallet = async () => {
     const dataWallet = await getFullWallet("DataProvider", "data_provider.json") as DataProviderWallet
-	return dataWallet
+    return dataWallet
 }
 export const getComputationProviderWallet = async () => {
     const computeWallet = await getFullWallet("ComputationProvider", "computation_provider.json") as ComputationProviderWallet
-	return computeWallet
+    return computeWallet
 }
 export const getResultReceiverWallet = async () => {
     const resultWallet = await getFullWallet("ResultReceiver", "result_receiver.json") as ResultReceiverWallet
-	return resultWallet
+    return resultWallet
 }
 export const getTag = (Message: any, Tag: string) => {
     const Tags = Message.Tags
@@ -83,3 +83,17 @@ export const getTag = (Message: any, Tag: string) => {
     }
     return null
 }
+export async function getExpectedMessage(Messages: any[], address: string) {
+    console.log("address ", address)
+    // console.log("messages ", Messages)
+    let targets = []
+    for (let msg of Messages) {
+        targets.push(msg.Target)
+        if (msg.Target === address) {
+            return msg;
+        }
+    }
+    console.log(targets)
+    return null
+}
+

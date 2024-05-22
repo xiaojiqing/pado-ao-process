@@ -1,6 +1,6 @@
 import {message, result} from "@permaweb/aoconnect"
 import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
-import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getDataProviderWallet, getComputationProviderWallet, getResultReceiverWallet, getTag} from "./utils"
+import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getDataProviderWallet, getComputationProviderWallet, getResultReceiverWallet, getTag, getExpectedMessage} from "./utils"
 import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
 import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
 
@@ -182,20 +182,6 @@ async function testGetCompletedTaskById(taskId: string, resultReceiverWallet: Re
     return Messages[0].Data
 }
 
-async function getExpectedMessage(Messages: any[], address: string) {
-    console.log("address ", address)
-    // console.log("messages ", Messages)
-    let targets = []
-    for (let msg of Messages) {
-        targets.push(msg.Target)
-        if (msg.Target === address) {
-            return msg;
-        }
-    }
-    console.log(targets)
-    return null
-}
-
 async function testReportResult(node:string, taskId:string, computeWallet: ComputationProviderWallet) {
     let action = "ReportResult"
     let computeResult = "compute result"
@@ -366,7 +352,7 @@ async function clear(clearInfo: ClearInfo, computeWallet: ComputationProviderWal
     }
 
     if (clearInfo.data) {
-        let registeredData = await testAllData(dataWallet)
+        let registeredData = await testAllData("All", dataWallet)
         console.log("registeredData", typeof registeredData, registeredData)
         let allData = JSON.parse(registeredData)
         for (const data of allData) {
@@ -402,7 +388,7 @@ async function main() {
     await testGetWhiteList(computeWallet)
     await registerAllNodes(nodes, computeWallet);
 
-    let dataId = await registerData(dataWallet)
+    let dataId = await registerData(nodes, dataWallet)
 
     await transferTokenToTask("5", resultWallet)
 
@@ -436,8 +422,11 @@ async function main() {
         await testGetCompletedTaskById(taskId, resultWallet)
     }
 
-    await deleteData(dataId, dataWallet);
     await deleteAllNodes(nodes, computeWallet);
+    let registeredData = await testAllData("All", dataWallet)
+    console.log(registeredData)
+
+    await deleteData(dataId, dataWallet);
     await testRemoveWhiteList(computeWallet.address, computeWallet)
 
     if (true) {
