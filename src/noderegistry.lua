@@ -157,7 +157,7 @@ Handlers.add(
       return
     end
     Nodes[nodeKey] = nil
-    ao.Send({Target = DATA_PROCESS_ID, Tags = {ACTION = "DeleteNodeNotice", Name =  msg.Tags.Name}})
+    ao.send({Target = DATA_PROCESS_ID, Tags = {Action = "DeleteNodeNotice", Name =  msg.Tags.Name}})
 
     replySuccess(msg, "delete " .. msg.Tags.Name .. " by " .. msg.From)
   end
