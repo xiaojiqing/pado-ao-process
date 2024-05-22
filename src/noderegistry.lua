@@ -129,10 +129,6 @@ Handlers.add(
       return
     end
 
-    if msg.Data ~= nil then
-      Nodes[nodeKey].publickey = msg.Data
-    end
-
     if msg.Tags.Desc ~= nil then
       Nodes[nodeKey].desc = msg.Tags.Desc
     end
@@ -156,11 +152,12 @@ Handlers.add(
       return
     end
 
-    if Nodes[nodeKey].from ~= msg.From then
+    if Nodes[nodeKey].from ~= msg.From and msg.From ~= NODE_REGISTRY_MANAGER then
       replyError(msg, "you are forbidden to delete")
       return
     end
     Nodes[nodeKey] = nil
+    ao.Send({Target = DATA_PROCESS_ID, Tags = {ACTION = "DeleteNodeNotice", Name =  msg.Tags.Name}})
 
     replySuccess(msg, "delete " .. msg.Tags.Name .. " by " .. msg.From)
   end
