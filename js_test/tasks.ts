@@ -352,7 +352,7 @@ async function clear(clearInfo: ClearInfo, computeWallet: ComputationProviderWal
     }
 
     if (clearInfo.data) {
-        let registeredData = await testAllData(dataWallet)
+        let registeredData = await testAllData("All", dataWallet)
         console.log("registeredData", typeof registeredData, registeredData)
         let allData = JSON.parse(registeredData)
         for (const data of allData) {
@@ -388,7 +388,7 @@ async function main() {
     await testGetWhiteList(computeWallet)
     await registerAllNodes(nodes, computeWallet);
 
-    let dataId = await registerData(dataWallet)
+    let dataId = await registerData(nodes, dataWallet)
 
     await transferTokenToTask("5", resultWallet)
 
@@ -422,8 +422,11 @@ async function main() {
         await testGetCompletedTaskById(taskId, resultWallet)
     }
 
-    await deleteData(dataId, dataWallet);
     await deleteAllNodes(nodes, computeWallet);
+    let registeredData = await testAllData("All", dataWallet)
+    console.log(registeredData)
+
+    await deleteData(dataId, dataWallet);
     await testRemoveWhiteList(computeWallet.address, computeWallet)
 
     if (true) {

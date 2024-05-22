@@ -17,6 +17,11 @@ Handlers.add(
       return
     end
 
+    if msg.Tags.ComputeNodes == nil then
+      replyError(msg, "ComputeNodes is required")
+      return
+    end
+
     if msg.Tags.Price == nil then
       replyError(msg, "Price is required")
       return
@@ -40,12 +45,16 @@ Handlers.add(
       return
     end
 
+    local computeNodes = require("json").decode(msg.Tags.ComputeNodes)
+
     AllData[dataKey] = {}
     AllData[dataKey].id = msg.Id
     AllData[dataKey].dataTag = msg.Tags.DataTag
     AllData[dataKey].price = msg.Tags.Price
     AllData[dataKey].data = msg.Data
     AllData[dataKey].from = msg.From
+    AllData[dataKey].computeNodes = computeNodes
+    AllData[dataKey].isValid = true
     replySuccess(msg, msg.Id)
   end
 )
@@ -100,10 +109,49 @@ Handlers.add(
   'allData',
   Handlers.utils.hasMatchingTag('Action', 'AllData'),
   function(msg)
+    local dataStatus = "Valid"
+
+    if msg.Tags.DataStatus ~= nil then
+      local msgDataStatus = msg.Tags.DataStatus
+      if not (msgDataStatus == "Valid" or msgDataStatus == "Invalid" or msgDataStatus == "All") then
+        replyError(msg, "DataStatus is incorrect")
+        return
+      end
+      dataStatus = msgDataStatus
+    end
+
     local allData = {}
-    for _, data in pairs(AllData) do
-      table.insert(allData, data)
+    if dataStatus == "All" then
+      for _, data in pairs(AllData) do
+        table.insert(allData, data)
+      end
+    else
+      local isValid = true
+      if dataStatus == "Invalid" then
+        isValid = false
+      end
+
+      for _, data in pairs(AllData) do
+        if data.isValid == isValid then
+          table.insert(allData, data)
+        end
+      end
     end
     replySuccess(msg, allData)
+  end
+)
+
+Handlers.add(
+  "deleteNodeNotice",
+  Handlers.utils.hasMatchingTag("Action", "DeleteNodeNotice"),
+  function(msg)
+    local nodeName = msg.Tags.Name
+    for nodeKey, data in pairs(AllData) do
+      if data.isValid then
+        if indexOf(data.computeNodes, nodeName) ~= nil then
+          AllData[nodeKey].isValid = false
+        end
+      end
+    end
   end
 )
