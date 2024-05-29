@@ -327,18 +327,28 @@ Handlers.add(
 )
 function completeTask(taskKey)
   local theTask = PendingTasks[taskKey]
+  local transferedTokens = tostring(0)
   for nodeName, _ in pairs(theTask.result) do
       local recipient = theTask.tokenRecipients[nodeName]
 
       LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], tostring(COMPUTATION_PRICE)))
       ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = recipient, Quantity = tostring(COMPUTATION_PRICE)}})
+      transferedTokens = tostring(bint.__add(transferedTokens, tostring(COMPUTATION_PRICE)))
   end
 
   LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], tostring(theTask.dataPrice)))
   ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = theTask.dataProvider, Quantity = tostring(theTask.dataPrice)}})
+  transferedTokens = tostring(bint.__add(transferedTokens, tostring(theTask.dataPrice)))
+
+  if transferedTokens ~= theTask.requiredTokens then
+    local returnedTokens = tostring(bint.__sub(theTask.requiredTokens, transferedTokens))
+    LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], returnedTokens))
+    FreeAllowances[theTask.from] = tostring(bint.__add(FreeAllowances[theTask.from], returnedTokens))
+  end
 
   CompletedTasks[taskKey] = PendingTasks[taskKey]
   CompletedTasks[taskKey].computeNodeMap = nil
+  CompletedTasks[taskKey].transferedToken = transferedTokens
   PendingTasks[taskKey] = nil
 end
 
