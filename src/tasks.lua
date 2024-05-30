@@ -1,7 +1,7 @@
 NODE_PROCESS_ID = NODE_PROCESS_ID or "Vlq4jWP6PLRo0Msjnxp8-vg9HalZv9e8tiz13OTK3gk"
 TOKEN_PROCESS_ID = TOKEN_PROCESS_ID or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 COMPUTATION_PRICE = 1 
-REPORT_TIMEOUT = 60 * 1000
+REPORT_TIMEOUT = REPORT_TIMEOUT or 60 * 1000
 
 CompletedTasks = CompletedTasks or {}
 PendingTasks = PendingTasks or {}
@@ -363,6 +363,9 @@ Handlers.add(
         if task.reportCount >= task.threshold then
           completeTask(taskId)
         else
+          LockedAllowances[task.from] = tostring(bint.__sub(LockedAllowances[task.from], task.requiredTokens))
+          FreeAllowances[task.from] = tostring(bint.__add(FreeAllowances[task.from], task.requiredTokens))
+          
           local verificationError = "not enough compute nodes report result"
           PendingTasks[taskId].verificationError = verificationError
           PendingTasks[taskId].msg = nil
