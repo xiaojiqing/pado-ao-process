@@ -17,11 +17,6 @@ Handlers.add(
       return
     end
 
-    if msg.Tags.ComputeNodes == nil then
-      replyError(msg, "ComputeNodes is required")
-      return
-    end
-
     if msg.Tags.Price == nil then
       replyError(msg, "Price is required")
       return
@@ -45,7 +40,7 @@ Handlers.add(
       return
     end
 
-    local computeNodes = require("json").decode(msg.Tags.ComputeNodes)
+    local computeNodes = require("json").decode(msg.Data).policy.names
 
     AllData[dataKey] = {}
     AllData[dataKey].id = msg.Id
@@ -55,6 +50,7 @@ Handlers.add(
     AllData[dataKey].from = msg.From
     AllData[dataKey].computeNodes = computeNodes
     AllData[dataKey].isValid = true
+    AllData[dataKey].timestamp = msg.Timestamp
     replySuccess(msg, msg.Id)
   end
 )

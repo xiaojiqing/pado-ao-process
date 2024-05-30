@@ -133,11 +133,11 @@ async function testGetTasks(action: string, wallet: Wallet) {
     if (Result.Error) {
         console.log(Result.Error)
     }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
+    let Message = await getExpectedMessage(Result.Messages, wallet.address)
+    if (getTag(Message, "Error")) {
+        throw getTag(Message, "Error")
     }
-    return Messages[0].Data
+    return Message.Data
 }
 
 async function testGetPendingTasks(computeProviderWallet: ComputationProviderWallet) {

@@ -192,7 +192,6 @@ Handlers.add(
     PendingTasks[taskKey].from = msg.From
     PendingTasks[taskKey].nodeVerified = false
     PendingTasks[taskKey].dataVerified = false
-    PendingTasks[taskKey].threshold = 2
     PendingTasks[taskKey].timestamp = msg.Timestamp
     PendingTasks[taskKey].reportCount = 0
     PendingTasks[taskKey].msg = msg
@@ -272,6 +271,7 @@ Handlers.add(
     local taskKey = dataMap.userData
     local data = dataMap.data
     local dataPrice = require("json").decode(data.price)
+    local policy = require("json").decode(data.data).policy
     local originMsg = PendingTasks[taskKey].msg
     local computeNodeCount = PendingTasks[taskKey].computeNodeCount
     local spender = PendingTasks[taskKey].from
@@ -281,6 +281,7 @@ Handlers.add(
     PendingTasks[taskKey].requiredTokens = calculateRequiredTokens(computeNodeCount, dataPrice.price)
     PendingTasks[taskKey].dataVerified = true
     PendingTasks[taskKey].dataProvider = data.from
+    PendingTasks[taskKey].threshold = policy.t
 
     local theTask = PendingTasks[taskKey]
     if theTask.nodeVerified and theTask.dataVerified then

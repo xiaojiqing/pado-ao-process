@@ -8,8 +8,7 @@ export async function testRegistry(nodes: string[], dataProviderWallet: DataProv
     let action = "Register"
     let dataTag = Date() 
     let price = JSON.stringify({"price": 1, "symbol": "AOCRED"})
-    let data = "data"
-    let encoded_nodes = JSON.stringify(nodes)
+    let data = JSON.stringify({"policy": {"t": 2, "n": 3, "indices": [1, 2, 3], "names": nodes}})
 
     let msgId = await message({
         "process": DATA_PROCESS,
@@ -18,7 +17,6 @@ export async function testRegistry(nodes: string[], dataProviderWallet: DataProv
             {"name": "Action", "value": action},
             {"name": "DataTag", "value": dataTag},
             {"name": "Price", "value": price},
-            {"name": "ComputeNodes", "value": encoded_nodes},
         ],
         "data": data
     });
