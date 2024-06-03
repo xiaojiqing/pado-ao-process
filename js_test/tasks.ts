@@ -34,6 +34,57 @@ async function testComputationPrice(resultReceiverWallet: ResultReceiverWallet) 
     console.log("computation price: ", Messages[0].Data)
     return Messages[0].Data
 }
+async function testReportTimeout(resultReceiverWallet: ResultReceiverWallet) {
+    let action = "ReportTimeout"
+
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": resultReceiverWallet.signer,
+        "tags": [
+            {"name": "Action", "value": action},
+        ]
+    });
+
+    let Result = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    console.log("report timeout: ", Messages[0].Data)
+    return Messages[0].Data
+}
+async function testCheckReportTimeout(resultReceiverWallet: ResultReceiverWallet) {
+    let action = "CheckReportTimeout"
+
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": resultReceiverWallet.signer,
+        "tags": [
+            {"name": "Action", "value": action},
+        ]
+    });
+
+    let Result = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    console.log("check report timeout: ", Messages[0].Data)
+    return Messages[0].Data
+}
+
 async function transferToken(recipient: string, quantity: string, wallet: Wallet) {
     let action = "Transfer"
 
@@ -379,6 +430,7 @@ async function main() {
     await testBalance(TASK_PROCESS, resultWallet)
     await testAllowance(resultWallet)
     await testComputationPrice(resultWallet)
+    await testReportTimeout(resultWallet)
 
     const nodes = ["js_aos1", "js_aos2", "js_aos3"]
     let clearInfo = {"whiteList": true, "node": true, "data": true}
@@ -413,6 +465,8 @@ async function main() {
         await testReportAllResult(taskId, computeWallet)
         await sleep(5000)
     }
+
+    await testCheckReportTimeout(resultWallet)
     
     if (false) {
         await testGetCompletedTasks(resultWallet)
