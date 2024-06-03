@@ -1,14 +1,14 @@
 import {message, result} from "@permaweb/aoconnect"
 import {DATA_PROCESS} from "./constants"
-import {getDataProviderWallet, DataProviderWallet, getTag} from "./utils"
+import {getDataProviderWallet, DataProviderWallet, getExpectedMessage, getTag} from "./utils"
 
 export type DataStatus = "Valid" | "Invalid" | "All"
 
-export async function testRegistry(nodes: string[], dataProviderWallet: DataProviderWallet) {
+export async function testRegistry(nodes: string[], indices: number[], dataProviderWallet: DataProviderWallet) {
     let action = "Register"
     let dataTag = Date() 
     let price = JSON.stringify({"price": 1, "symbol": "AOCRED"})
-    let data = JSON.stringify({"policy": {"t": 2, "n": 3, "indices": [1, 2, 3], "names": nodes}})
+    let data = JSON.stringify({"policy": {"t": 2, "n": 3, "indices": indices, "names": nodes}})
 
     let msgId = await message({
         "process": DATA_PROCESS,
@@ -28,14 +28,14 @@ export async function testRegistry(nodes: string[], dataProviderWallet: DataProv
     if (Result.Error) {
         console.log(Result.Error)
     }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
+    let Message = await getExpectedMessage(Result.Messages, dataProviderWallet.address)
+    if (getTag(Message, "Error")) {
+        throw getTag(Message, "Error")
     }
     // console.log(Messages)
     // console.log(Messages[0].Tags)
 
-    return Messages[0].Data
+    return Message.Data
 }
 
 async function testGetDataById(dataId: string, dataProviderWallet: DataProviderWallet) {
@@ -118,8 +118,9 @@ export async function testDelete(dataId: string, dataProviderWallet: DataProvide
 export async function main() {
     let dataProviderWallet = await getDataProviderWallet();
     let nodes = ["js_aos1", "js_aos2", "js_aos3"]
+    let indices = [1, 2, 3]
 
-    let dataId = await testRegistry(nodes, dataProviderWallet)
+    let dataId = await testRegistry(nodes, indices, dataProviderWallet)
     console.log("dataId: ", dataId)
 
     let res = await testGetDataById(dataId, dataProviderWallet)

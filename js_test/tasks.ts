@@ -2,7 +2,7 @@ import {message, result} from "@permaweb/aoconnect"
 import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
 import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getDataProviderWallet, getComputationProviderWallet, getResultReceiverWallet, getTag, getExpectedMessage} from "./utils"
 import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
-import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
+import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList, testVerifyComputeNodes} from "./noderegistry"
 
 interface ClearInfo {
     whiteList: boolean,
@@ -432,7 +432,8 @@ async function main() {
     await testComputationPrice(resultWallet)
     await testReportTimeout(resultWallet)
 
-    const nodes = ["js_aos1", "js_aos2", "js_aos3"]
+    let nodes = ["js_aos1", "js_aos2", "js_aos3"]
+    let indices = [1, 2, 3]
     let clearInfo = {"whiteList": true, "node": true, "data": true}
     await clear(clearInfo, computeWallet, dataWallet)
 
@@ -440,7 +441,17 @@ async function main() {
     await testGetWhiteList(computeWallet)
     await registerAllNodes(nodes, computeWallet);
 
-    let dataId = await registerData(nodes, dataWallet)
+    let registeredNodes = await testGetAllNodes(computeWallet)
+    let allNodes = JSON.parse(registeredNodes)
+    nodes = []
+    indices = []
+    for (let i = 0; i < allNodes.length; i++) {
+        nodes.push(allNodes[i].name)
+        indices.push(allNodes[i].index)
+    }
+
+    await testVerifyComputeNodes(nodes, indices, computeWallet)
+    let dataId = await registerData(nodes, indices, dataWallet)
 
     await transferTokenToTask("5", resultWallet)
 

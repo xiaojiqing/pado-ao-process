@@ -1,4 +1,5 @@
 AllData = AllData or {}
+PendingData = PendingData or {}
 
 function getInitialDataKey(msg)
   return msg.Id
@@ -40,18 +41,57 @@ Handlers.add(
       return
     end
 
-    local computeNodes = require("json").decode(msg.Data).policy.names
+    local policy = require("json").decode(msg.Data).policy
+    local computeNodes = policy.names
+    local indices = policy.indices
+    if #computeNodes ~= #indices then
+      replyError(msg, "the length of names and indices in policy is inconsistent")
+      return
+    end
 
-    AllData[dataKey] = {}
-    AllData[dataKey].id = msg.Id
-    AllData[dataKey].dataTag = msg.Tags.DataTag
-    AllData[dataKey].price = msg.Tags.Price
-    AllData[dataKey].data = msg.Data
-    AllData[dataKey].from = msg.From
-    AllData[dataKey].computeNodes = computeNodes
-    AllData[dataKey].isValid = true
-    AllData[dataKey].timestamp = msg.Timestamp
+    PendingData[dataKey] = {}
+    PendingData[dataKey].id = msg.Id
+    PendingData[dataKey].dataTag = msg.Tags.DataTag
+    PendingData[dataKey].price = msg.Tags.Price
+    PendingData[dataKey].data = msg.Data
+    PendingData[dataKey].from = msg.From
+    PendingData[dataKey].computeNodes = computeNodes
+    PendingData[dataKey].isValid = true
+    PendingData[dataKey].timestamp = msg.Timestamp
+
+    local computeNodeList = {}
+    for i = 1, #computeNodes do
+      local computeNode = {}
+      computeNode["name"] = computeNodes[i]
+      computeNode["index"] = indices[i]
+
+      table.insert(computeNodeList, computeNode)
+    end
+    local computeNodeStr = require("json").encode(computeNodeList)
+
+    ao.send({Target = NODE_PROCESS_ID, Tags = {Action = "VerifyComputeNodes", ComputeNodes = computeNodeStr}, UserData = dataKey})
     replySuccess(msg, msg.Id)
+  end
+)
+
+Handlers.add(
+  "verifyComputeNodesSuccess",
+  Handlers.utils.hasMatchingTag("Action", "VerifyComputeNodes-Success"),
+  function (msg)
+    local dataMap = require("json").decode(msg.Data)
+    local dataKey = dataMap.userData
+    AllData[dataKey] = PendingData[dataKey]
+    PendingData[dataKey] = nil
+  end
+)
+
+Handlers.add(
+  "verifyComputeNodesError",
+  Handlers.utils.hasMatchingTag("Action", "VerifyComputeNodes-Error"),
+  function (msg)
+    local dataMap = require("json").decode(msg.Data)
+    local dataKey = dataMap.userData
+    PendingData[dataKey] = nil
   end
 )
 

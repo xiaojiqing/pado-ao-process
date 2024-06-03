@@ -213,3 +213,31 @@ Handlers.add(
     replySuccess(msg, computeNodeMap)
   end
 )
+
+Handlers.add(
+  "verifyComputeNodes",
+  Handlers.utils.hasMatchingTag("Action", "VerifyComputeNodes"),
+  function (msg)
+    if msg.Tags.ComputeNodes == nil then
+      replyError(msg, "ComputeNodes is required")
+      return
+    end
+
+    local computeNodes = require("json").decode(msg.Tags.ComputeNodes)
+    for _, node in ipairs(computeNodes) do
+      local name = node.name
+      local index = node.index
+      if Nodes[name] == nil then
+        replyError(msg, "NodeName[" .. name .. "] not exist")
+        return
+      end
+
+      if Nodes[name].index ~= index then
+        replyError(msg, "the index of NodeName[" .. name .. "] is incorrect")
+        return
+      end
+    end
+
+    replySuccess(msg, "verification passed")
+  end
+)
