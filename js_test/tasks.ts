@@ -77,12 +77,12 @@ async function testCheckReportTimeout(resultReceiverWallet: ResultReceiverWallet
     if (Result.Error) {
         console.log(Result.Error)
     }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
+    let Message = await getExpectedMessage(Result.Messages, resultReceiverWallet.address)
+    if (getTag(Message, "Error")) {
+        throw getTag(Message, "Error")
     }
-    console.log("check report timeout: ", Messages[0].Data)
-    return Messages[0].Data
+    console.log("check report timeout: ", Message.Data)
+    return Message.Data
 }
 
 async function transferToken(recipient: string, quantity: string, wallet: Wallet) {
