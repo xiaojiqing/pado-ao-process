@@ -54,7 +54,7 @@ end
 
 function checkReportTimeout(now)
   for taskId, task in pairs(PendingTasks) do
-    if now - task.timestamp > REPORT_TIMEOUT then
+    if now - task.startTimestamp > REPORT_TIMEOUT then
       if task.reportCount >= task.threshold then
         completeTask(taskId)
       else
@@ -227,7 +227,7 @@ Handlers.add(
     PendingTasks[taskKey].from = msg.From
     PendingTasks[taskKey].nodeVerified = false
     PendingTasks[taskKey].dataVerified = false
-    PendingTasks[taskKey].timestamp = msg.Timestamp
+    PendingTasks[taskKey].startTimestamp = msg.Timestamp
     PendingTasks[taskKey].reportCount = 0
     PendingTasks[taskKey].msg = msg
 
@@ -383,9 +383,17 @@ function completeTask(taskKey)
     FreeAllowances[theTask.from] = tostring(bint.__add(FreeAllowances[theTask.from], returnedTokens))
   end
 
+  local endTimestamp = 0
+  for _, timestamp in pairs(theTask.reportedTimestamp) do
+    if timestamp > endTimestamp then
+      endTimestamp = timestamp
+    end
+  end
+
   CompletedTasks[taskKey] = PendingTasks[taskKey]
   CompletedTasks[taskKey].computeNodeMap = nil
   CompletedTasks[taskKey].transferedToken = transferedTokens
+  CompletedTasks[taskKey].endTimestamp = endTimestamp
   PendingTasks[taskKey] = nil
 end
 
@@ -440,6 +448,10 @@ Handlers.add(
     end
     PendingTasks[taskKey].result = PendingTasks[taskKey].result or {}
     PendingTasks[taskKey].result[msg.Tags.NodeName] = msg.Data
+
+    PendingTasks[taskKey].reportedTimestamp = PendingTasks[taskKey].reportedTimestamp or {}
+    PendingTasks[taskKey].reportedTimestamp[msg.Tags.NodeName] = msg.Timestamp
+
     PendingTasks[taskKey].computeNodeMap[msg.Tags.NodeName] = nil
     PendingTasks[taskKey].reportCount = PendingTasks[taskKey].reportCount + 1
     if PendingTasks[taskKey].reportCount == PendingTasks[taskKey].computeNodeCount then

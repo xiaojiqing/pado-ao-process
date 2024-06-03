@@ -57,7 +57,7 @@ Handlers.add(
     PendingData[dataKey].from = msg.From
     PendingData[dataKey].computeNodes = computeNodes
     PendingData[dataKey].isValid = true
-    PendingData[dataKey].timestamp = msg.Timestamp
+    PendingData[dataKey].registeredTimestamp = msg.Timestamp
 
     local computeNodeList = {}
     for i = 1, #computeNodes do

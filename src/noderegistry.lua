@@ -104,6 +104,7 @@ Handlers.add(
     Nodes[nodeKey].publickey = msg.Data
     Nodes[nodeKey].desc = msg.Tags.Desc
     Nodes[nodeKey].from = msg.From
+    Nodes[nodeKey].registeredTimestamp = msg.Timestamp
     replySuccess(msg, "register " .. msg.Tags.Name .. " by " .. msg.From)
   end
 )
