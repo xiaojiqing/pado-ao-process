@@ -2,7 +2,7 @@ import {message, result} from "@permaweb/aoconnect"
 import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
 import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getDataProviderWallet, getComputationProviderWallet, getResultReceiverWallet, getTag, getExpectedMessage} from "./utils"
 import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
-import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
+import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList, testVerifyComputeNodes} from "./noderegistry"
 
 interface ClearInfo {
     whiteList: boolean,
@@ -34,6 +34,57 @@ async function testComputationPrice(resultReceiverWallet: ResultReceiverWallet) 
     console.log("computation price: ", Messages[0].Data)
     return Messages[0].Data
 }
+async function testReportTimeout(resultReceiverWallet: ResultReceiverWallet) {
+    let action = "ReportTimeout"
+
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": resultReceiverWallet.signer,
+        "tags": [
+            {"name": "Action", "value": action},
+        ]
+    });
+
+    let Result = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Messages = Result.Messages
+    if (getTag(Messages[0], "Error")) {
+        throw getTag(Messages[0], "Error")
+    }
+    console.log("report timeout: ", Messages[0].Data)
+    return Messages[0].Data
+}
+async function testCheckReportTimeout(resultReceiverWallet: ResultReceiverWallet) {
+    let action = "CheckReportTimeout"
+
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": resultReceiverWallet.signer,
+        "tags": [
+            {"name": "Action", "value": action},
+        ]
+    });
+
+    let Result = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    });
+    if (Result.Error) {
+        console.log(Result.Error)
+    }
+    let Message = await getExpectedMessage(Result.Messages, resultReceiverWallet.address)
+    if (getTag(Message, "Error")) {
+        throw getTag(Message, "Error")
+    }
+    console.log("check report timeout: ", Message.Data)
+    return Message.Data
+}
+
 async function transferToken(recipient: string, quantity: string, wallet: Wallet) {
     let action = "Transfer"
 
@@ -133,11 +184,11 @@ async function testGetTasks(action: string, wallet: Wallet) {
     if (Result.Error) {
         console.log(Result.Error)
     }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
+    let Message = await getExpectedMessage(Result.Messages, wallet.address)
+    if (getTag(Message, "Error")) {
+        throw getTag(Message, "Error")
     }
-    return Messages[0].Data
+    return Message.Data
 }
 
 async function testGetPendingTasks(computeProviderWallet: ComputationProviderWallet) {
@@ -379,8 +430,10 @@ async function main() {
     await testBalance(TASK_PROCESS, resultWallet)
     await testAllowance(resultWallet)
     await testComputationPrice(resultWallet)
+    await testReportTimeout(resultWallet)
 
-    const nodes = ["js_aos1", "js_aos2", "js_aos3"]
+    let nodes = ["js_aos1", "js_aos2", "js_aos3"]
+    let indices = [1, 2, 3]
     let clearInfo = {"whiteList": true, "node": true, "data": true}
     await clear(clearInfo, computeWallet, dataWallet)
 
@@ -388,7 +441,17 @@ async function main() {
     await testGetWhiteList(computeWallet)
     await registerAllNodes(nodes, computeWallet);
 
-    let dataId = await registerData(nodes, dataWallet)
+    let registeredNodes = await testGetAllNodes(computeWallet)
+    let allNodes = JSON.parse(registeredNodes)
+    nodes = []
+    indices = []
+    for (let i = 0; i < allNodes.length; i++) {
+        nodes.push(allNodes[i].name)
+        indices.push(allNodes[i].index)
+    }
+
+    await testVerifyComputeNodes(nodes, indices, computeWallet)
+    let dataId = await registerData(nodes, indices, dataWallet)
 
     await transferTokenToTask("5", resultWallet)
 
@@ -413,6 +476,8 @@ async function main() {
         await testReportAllResult(taskId, computeWallet)
         await sleep(5000)
     }
+
+    await testCheckReportTimeout(resultWallet)
     
     if (false) {
         await testGetCompletedTasks(resultWallet)

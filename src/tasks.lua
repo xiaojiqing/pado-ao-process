@@ -1,6 +1,6 @@
-NODE_PROCESS_ID = NODE_PROCESS_ID or "Vlq4jWP6PLRo0Msjnxp8-vg9HalZv9e8tiz13OTK3gk"
 TOKEN_PROCESS_ID = TOKEN_PROCESS_ID or "Sa0iBLPNyJQrwpTTG-tWLQU-1QeUAJA73DdxGGiKoJc"
 COMPUTATION_PRICE = 1 
+REPORT_TIMEOUT = REPORT_TIMEOUT or 60 * 1000
 
 CompletedTasks = CompletedTasks or {}
 PendingTasks = PendingTasks or {}
@@ -52,11 +52,47 @@ function calculateRequiredTokens(computeNodeCount, dataPrice)
   return totalCost
 end
 
+function checkReportTimeout(now)
+  for taskId, task in pairs(PendingTasks) do
+    if now - task.startTimestamp > REPORT_TIMEOUT then
+      if task.reportCount >= task.threshold then
+        completeTask(taskId)
+      else
+        LockedAllowances[task.from] = tostring(bint.__sub(LockedAllowances[task.from], task.requiredTokens))
+        FreeAllowances[task.from] = tostring(bint.__add(FreeAllowances[task.from], task.requiredTokens))
+        
+        local verificationError = "not enough compute nodes report result"
+        PendingTasks[taskId].verificationError = verificationError
+        PendingTasks[taskId].msg = nil
+        CompletedTasks[taskId] = PendingTasks[taskId]
+        PendingTasks[taskId] = nil
+      end
+    end
+  end
+end
+
 Handlers.add(
   "computationPrice",
   Handlers.utils.hasMatchingTag("Action", "ComputationPrice"),
   function (msg)
     replySuccess(msg, tostring(COMPUTATION_PRICE))
+  end
+)
+
+Handlers.add(
+  "reportTimeout",
+  Handlers.utils.hasMatchingTag("Action", "ReportTimeout"),
+  function (msg)
+    replySuccess(msg, tostring(REPORT_TIMEOUT))
+  end
+)
+
+Handlers.add(
+  "CheckReportTimeout",
+  Handlers.utils.hasMatchingTag("Action", "CheckReportTimeout"),
+  function (msg)
+    checkReportTimeout(msg.Timestamp)
+    replySuccess(msg, "checked")
   end
 )
 
@@ -191,12 +227,15 @@ Handlers.add(
     PendingTasks[taskKey].from = msg.From
     PendingTasks[taskKey].nodeVerified = false
     PendingTasks[taskKey].dataVerified = false
+    PendingTasks[taskKey].startTimestamp = msg.Timestamp
+    PendingTasks[taskKey].reportCount = 0
     PendingTasks[taskKey].msg = msg
 
     ao.send({Target = NODE_PROCESS_ID, Tags = {Action = "GetComputeNodes", ComputeNodes = msg.Tags.ComputeNodes, UserData = taskKey}}) 
     ao.send({Target = DATA_PROCESS_ID, Tags = {Action = "GetDataById", DataId = msg.Tags.DataId, UserData = taskKey}})
 
     replySuccess(msg, taskKey)
+    checkReportTimeout(msg.Timestamp)
   end
 )
 
@@ -268,6 +307,7 @@ Handlers.add(
     local taskKey = dataMap.userData
     local data = dataMap.data
     local dataPrice = require("json").decode(data.price)
+    local policy = require("json").decode(data.data).policy
     local originMsg = PendingTasks[taskKey].msg
     local computeNodeCount = PendingTasks[taskKey].computeNodeCount
     local spender = PendingTasks[taskKey].from
@@ -277,6 +317,7 @@ Handlers.add(
     PendingTasks[taskKey].requiredTokens = calculateRequiredTokens(computeNodeCount, dataPrice.price)
     PendingTasks[taskKey].dataVerified = true
     PendingTasks[taskKey].dataProvider = data.from
+    PendingTasks[taskKey].threshold = policy.t
 
     local theTask = PendingTasks[taskKey]
     if theTask.nodeVerified and theTask.dataVerified then
@@ -321,6 +362,41 @@ Handlers.add(
     end
   end
 )
+function completeTask(taskKey)
+  local theTask = PendingTasks[taskKey]
+  local transferedTokens = tostring(0)
+  for nodeName, _ in pairs(theTask.result) do
+      local recipient = theTask.tokenRecipients[nodeName]
+
+      LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], tostring(COMPUTATION_PRICE)))
+      ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = recipient, Quantity = tostring(COMPUTATION_PRICE)}})
+      transferedTokens = tostring(bint.__add(transferedTokens, tostring(COMPUTATION_PRICE)))
+  end
+
+  LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], tostring(theTask.dataPrice)))
+  ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = theTask.dataProvider, Quantity = tostring(theTask.dataPrice)}})
+  transferedTokens = tostring(bint.__add(transferedTokens, tostring(theTask.dataPrice)))
+
+  if transferedTokens ~= theTask.requiredTokens then
+    local returnedTokens = tostring(bint.__sub(theTask.requiredTokens, transferedTokens))
+    LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], returnedTokens))
+    FreeAllowances[theTask.from] = tostring(bint.__add(FreeAllowances[theTask.from], returnedTokens))
+  end
+
+  local endTimestamp = 0
+  for _, timestamp in pairs(theTask.reportedTimestamp) do
+    if timestamp > endTimestamp then
+      endTimestamp = timestamp
+    end
+  end
+
+  CompletedTasks[taskKey] = PendingTasks[taskKey]
+  CompletedTasks[taskKey].computeNodeMap = nil
+  CompletedTasks[taskKey].transferedToken = transferedTokens
+  CompletedTasks[taskKey].endTimestamp = endTimestamp
+  PendingTasks[taskKey] = nil
+end
+
 Handlers.add(
   "getPendingTasks",
   Handlers.utils.hasMatchingTag("Action", "GetPendingTasks"),
@@ -372,22 +448,14 @@ Handlers.add(
     end
     PendingTasks[taskKey].result = PendingTasks[taskKey].result or {}
     PendingTasks[taskKey].result[msg.Tags.NodeName] = msg.Data
+
+    PendingTasks[taskKey].reportedTimestamp = PendingTasks[taskKey].reportedTimestamp or {}
+    PendingTasks[taskKey].reportedTimestamp[msg.Tags.NodeName] = msg.Timestamp
+
     PendingTasks[taskKey].computeNodeMap[msg.Tags.NodeName] = nil
-    local notReportedCount =  count(PendingTasks[taskKey].computeNodeMap)
-    if notReportedCount == 0 then
-      local theTask = PendingTasks[taskKey]
-      for _, recipient in pairs(theTask.tokenRecipients) do
-
-          LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], tostring(COMPUTATION_PRICE)))
-          ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = recipient, Quantity = tostring(COMPUTATION_PRICE)}})
-      end
-
-      LockedAllowances[theTask.from] = tostring(bint.__sub(LockedAllowances[theTask.from], tostring(theTask.dataPrice)))
-      ao.send({Target = TOKEN_PROCESS_ID, Tags = {Action = "Transfer", Recipient = theTask.dataProvider, Quantity = tostring(theTask.dataPrice)}})
-
-      CompletedTasks[taskKey] = PendingTasks[taskKey]
-      CompletedTasks[taskKey].computeNodeMap = nil
-      PendingTasks[taskKey] = nil
+    PendingTasks[taskKey].reportCount = PendingTasks[taskKey].reportCount + 1
+    if PendingTasks[taskKey].reportCount == PendingTasks[taskKey].computeNodeCount then
+      completeTask(taskKey)
     end
     replySuccess(msg, taskKey)
   end

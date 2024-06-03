@@ -104,6 +104,7 @@ Handlers.add(
     Nodes[nodeKey].publickey = msg.Data
     Nodes[nodeKey].desc = msg.Tags.Desc
     Nodes[nodeKey].from = msg.From
+    Nodes[nodeKey].registeredTimestamp = msg.Timestamp
     replySuccess(msg, "register " .. msg.Tags.Name .. " by " .. msg.From)
   end
 )
@@ -211,5 +212,33 @@ Handlers.add(
     end
 
     replySuccess(msg, computeNodeMap)
+  end
+)
+
+Handlers.add(
+  "verifyComputeNodes",
+  Handlers.utils.hasMatchingTag("Action", "VerifyComputeNodes"),
+  function (msg)
+    if msg.Tags.ComputeNodes == nil then
+      replyError(msg, "ComputeNodes is required")
+      return
+    end
+
+    local computeNodes = require("json").decode(msg.Tags.ComputeNodes)
+    for _, node in ipairs(computeNodes) do
+      local name = node.name
+      local index = node.index
+      if Nodes[name] == nil then
+        replyError(msg, "NodeName[" .. name .. "] not exist")
+        return
+      end
+
+      if Nodes[name].index ~= index then
+        replyError(msg, "the index of NodeName[" .. name .. "] is incorrect")
+        return
+      end
+    end
+
+    replySuccess(msg, "verification passed")
   end
 )
