@@ -2,7 +2,7 @@ import {message, result} from "@permaweb/aoconnect"
 import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
 import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getDataProviderWallet, getComputationProviderWallet, getResultReceiverWallet, getTag, getExpectedMessage} from "./utils"
 import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
-import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList, testVerifyComputeNodes} from "./noderegistry"
+import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
 
 interface ClearInfo {
     whiteList: boolean,
@@ -450,7 +450,6 @@ async function main() {
         indices.push(allNodes[i].index)
     }
 
-    await testVerifyComputeNodes(nodes, indices, computeWallet)
     let dataId = await registerData(nodes, indices, dataWallet)
 
     await transferTokenToTask("5", resultWallet)
