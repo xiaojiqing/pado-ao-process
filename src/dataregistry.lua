@@ -59,24 +59,16 @@ Handlers.add(
     PendingData[dataKey].isValid = true
     PendingData[dataKey].registeredTimestamp = msg.Timestamp
 
-    local computeNodeList = {}
-    for i = 1, #computeNodes do
-      local computeNode = {}
-      computeNode["name"] = computeNodes[i]
-      computeNode["index"] = indices[i]
+    local computeNodeStr = require("json").encode(computeNodes)
 
-      table.insert(computeNodeList, computeNode)
-    end
-    local computeNodeStr = require("json").encode(computeNodeList)
-
-    ao.send({Target = NODE_PROCESS_ID, Tags = {Action = "VerifyComputeNodes", ComputeNodes = computeNodeStr}, UserData = dataKey})
+    ao.send({Target = NODE_PROCESS_ID, Tags = {Action = "GetComputeNodes", ComputeNodes = computeNodeStr, UserData = dataKey}}) 
     replySuccess(msg, msg.Id)
   end
 )
 
 Handlers.add(
-  "verifyComputeNodesSuccess",
-  Handlers.utils.hasMatchingTag("Action", "VerifyComputeNodes-Success"),
+  "getComputeNodesSuccess",
+  Handlers.utils.hasMatchingTag("Action", "GetComputeNodes-Success"),
   function (msg)
     local dataMap = require("json").decode(msg.Data)
     local dataKey = dataMap.userData
@@ -86,11 +78,11 @@ Handlers.add(
 )
 
 Handlers.add(
-  "verifyComputeNodesError",
-  Handlers.utils.hasMatchingTag("Action", "VerifyComputeNodes-Error"),
+  "getComputeNodesError",
+  Handlers.utils.hasMatchingTag("Action", "GetComputeNodes-Error"),
   function (msg)
-    local dataMap = require("json").decode(msg.Data)
-    local dataKey = dataMap.userData
+    local errorMap = require("json").decode(msg.Tags.Error)
+    local dataKey = errorMap.userData
     PendingData[dataKey] = nil
   end
 )

@@ -154,41 +154,6 @@ async function testGetNodeByName(name: string, computationProviderWallet: Comput
     }
     return Messages[0].Data
 }
-export async function testVerifyComputeNodes(names: string[], indices: number[], computationProviderWallet: ComputationProviderWallet) {
-    let action = "VerifyComputeNodes"
-
-    let computeNodeList = []
-    for (let i = 0; i < names.length; i++) {
-        let node = {"name": names[i], "index": indices[i]}
-        computeNodeList.push(node)
-    }
-
-    let computeNodes = JSON.stringify(computeNodeList)
-
-    let msgId = await message({
-        "process": NODE_PROCESS,
-        "signer": computationProviderWallet.signer,
-        "tags": [
-            {"name": "Action", "value": action},
-            {"name": "ComputeNodes", "value": computeNodes},
-        ],
-    });
-    let Result = await result({
-        "process": NODE_PROCESS,
-        "message": msgId,
-    })
-    if (Result.Error) {
-        throw Result.Error
-    }
-    let Messages = Result.Messages
-    let Message = await getExpectedMessage(Messages, computationProviderWallet.address)
-    if (getTag(Message, "Error")) {
-        throw getTag(Message, "Error")
-    }
-    return Message.Data
-
-}
-
 async function testDelete(name: string, computationProviderWallet: ComputationProviderWallet) {
     let action = "Delete"
 
