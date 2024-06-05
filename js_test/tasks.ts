@@ -27,6 +27,53 @@ async function testComputationPrice(resultReceiverWallet: ResultReceiverWallet) 
     let Message = await getMessage(Result, msgId)
     return Message.Data
 }
+async function testNotice(wallet: Wallet) {
+    let action = "Notice"
+
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": wallet.signer,
+        "tags": [
+            {"name": "Action", "value": action},
+        ]
+    });
+
+    let Result = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    })
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
+}
+interface NoticeItem {
+    quantity: string;
+    timestamp: number;
+}
+interface Notice {
+    credit: NoticeItem[];
+    debit: NoticeItem[];
+}
+function printNotice(msg:string, {credit, debit}: Notice) {
+    console.log(msg)
+    if (credit.length > 0) {
+        for (let c of credit) {
+            console.log("credit", (new Date(c.timestamp)).toString(), c.quantity)
+        }
+    }
+    if (debit.length > 0) {
+        for (let d of debit) {
+            console.log("debit", (new Date(d.timestamp)).toString(), d.quantity)
+        }
+    }
+}
+async function testAllNotice(dataWallet: DataProviderWallet, computeWallet: ComputationProviderWallet, resultWallet: ResultReceiverWallet) {
+    let dataNotice = await testNotice(dataWallet)
+    let computeNotice = await testNotice(computeWallet)
+    let resultNotice = await testNotice(resultWallet)
+    printNotice("data notice", JSON.parse(dataNotice))
+    printNotice("compute notice", JSON.parse(computeNotice))
+    printNotice("result notice", JSON.parse(resultNotice))
+}
 async function testReportTimeout(resultReceiverWallet: ResultReceiverWallet) {
     let action = "ReportTimeout"
 
@@ -417,6 +464,7 @@ async function main() {
     await testWalletBalance(resultWallet)
     await testBalance(TASK_PROCESS, resultWallet)
     await testAllowance(resultWallet)
+    await testAllNotice(dataWallet, computeWallet, resultWallet)
 
     return "finished"
 }
