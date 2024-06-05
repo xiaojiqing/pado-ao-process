@@ -54,18 +54,20 @@ end
 
 function checkReportTimeout(now)
   for taskId, task in pairs(PendingTasks) do
-    if now - task.startTimestamp > REPORT_TIMEOUT then
-      if task.reportCount >= task.threshold then
-        completeTask(taskId)
-      else
-        LockedAllowances[task.from] = tostring(bint.__sub(LockedAllowances[task.from], task.requiredTokens))
-        FreeAllowances[task.from] = tostring(bint.__add(FreeAllowances[task.from], task.requiredTokens))
-        
-        local verificationError = "not enough compute nodes report result"
-        PendingTasks[taskId].verificationError = verificationError
-        PendingTasks[taskId].msg = nil
-        CompletedTasks[taskId] = PendingTasks[taskId]
-        PendingTasks[taskId] = nil
+    if task.nodeVerified and task.dataVerified then
+      if now - task.startTimestamp > REPORT_TIMEOUT then
+        if task.reportCount >= task.threshold then
+          completeTask(taskId)
+        else
+          LockedAllowances[task.from] = tostring(bint.__sub(LockedAllowances[task.from], task.requiredTokens))
+          FreeAllowances[task.from] = tostring(bint.__add(FreeAllowances[task.from], task.requiredTokens))
+          
+          local verificationError = "not enough compute nodes report result"
+          PendingTasks[taskId].verificationError = verificationError
+          PendingTasks[taskId].msg = nil
+          CompletedTasks[taskId] = PendingTasks[taskId]
+          PendingTasks[taskId] = nil
+        end
       end
     end
   end

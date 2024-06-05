@@ -23,7 +23,7 @@ Handlers.add(
 
     local address = msg.Tags.Address
     local index = indexOf(WhiteList, address)
-    if index ~= nil then
+    if index ~= 0 then
       replyError(msg, "Already added")
       return
     end
@@ -57,7 +57,7 @@ Handlers.add(
 
     local address = msg.Tags.Address
     local index = indexOf(WhiteList, address)
-    if index == nil then
+    if index == 0 then
       replyError(msg, "Not found in white list")
       return
     end
@@ -86,7 +86,7 @@ Handlers.add(
       return
     end
 
-    if indexOf(WhiteList, msg.From) == nil then
+    if indexOf(WhiteList, msg.From) == 0 then
       replyError(msg, "Not allowed to register node " .. "by " .. msg.From)
       return
     end
