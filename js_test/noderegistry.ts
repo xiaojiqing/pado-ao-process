@@ -1,6 +1,6 @@
 import {message, result} from "@permaweb/aoconnect"
 import {NODE_PROCESS} from "./constants"
-import {getComputationProviderWallet, getExpectedMessage, getTag, ComputationProviderWallet} from "./utils"
+import {getComputationProviderWallet, getMessage, ComputationProviderWallet} from "./utils"
 
 export async function testAddWhiteList(address: string, computationProviderWallet: ComputationProviderWallet) {
     let action = "AddWhiteList"
@@ -17,14 +17,8 @@ export async function testAddWhiteList(address: string, computationProviderWalle
         "message": msgId,
         "process": NODE_PROCESS,
     })
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 
 export async function testGetWhiteList(computationProviderWallet: ComputationProviderWallet) {
@@ -41,15 +35,8 @@ export async function testGetWhiteList(computationProviderWallet: ComputationPro
         "message": msgId,
         "process": NODE_PROCESS,
     })
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    console.log("white list: ", Messages[0].Data)
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 
 export async function testRemoveWhiteList(address: string, computationProviderWallet: ComputationProviderWallet) {
@@ -66,14 +53,8 @@ export async function testRemoveWhiteList(address: string, computationProviderWa
         "message": msgId,
         "process": NODE_PROCESS,
     })
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 async function testRegistry(name: string, computationProviderWallet:ComputationProviderWallet) {
     let action = "Register"
@@ -95,15 +76,8 @@ async function testRegistry(name: string, computationProviderWallet:ComputationP
         "message": msgId,
         "process": NODE_PROCESS,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    // console.log("register res: ", Messages);
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 export async function testGetAllNodes(computationProviderWallet: ComputationProviderWallet) {
     let action = "Nodes"
@@ -119,15 +93,8 @@ export async function testGetAllNodes(computationProviderWallet: ComputationProv
         "message": msgId,
         "process": NODE_PROCESS,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    // console.log("all process: ", Messages)
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 
 async function testGetNodeByName(name: string, computationProviderWallet: ComputationProviderWallet) {
@@ -145,14 +112,8 @@ async function testGetNodeByName(name: string, computationProviderWallet: Comput
         "message": msgId,
         "process": NODE_PROCESS,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 async function testDelete(name: string, computationProviderWallet: ComputationProviderWallet) {
     let action = "Delete"
@@ -169,14 +130,7 @@ async function testDelete(name: string, computationProviderWallet: ComputationPr
         "message": msgId,
         "process": NODE_PROCESS,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    let Message = await getExpectedMessage(Messages, computationProviderWallet.address)
-    if (getTag(Message, "Error")) {
-        throw getTag(Message, "Error")
-    }
+    let Message = await getMessage(Result, msgId)
     return Message.Data
 }
 

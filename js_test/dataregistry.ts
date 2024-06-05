@@ -1,6 +1,6 @@
 import {message, result} from "@permaweb/aoconnect"
 import {DATA_PROCESS} from "./constants"
-import {getDataProviderWallet, DataProviderWallet, getExpectedMessage, getTag} from "./utils"
+import {getDataProviderWallet, DataProviderWallet, getMessage} from "./utils"
 
 export type DataStatus = "Valid" | "Invalid" | "All"
 
@@ -25,16 +25,7 @@ export async function testRegistry(nodes: string[], indices: number[], dataProvi
         "process": DATA_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Message = await getExpectedMessage(Result.Messages, dataProviderWallet.address)
-    if (getTag(Message, "Error")) {
-        throw getTag(Message, "Error")
-    }
-    // console.log(Messages)
-    // console.log(Messages[0].Tags)
-
+    let Message = await getMessage(Result, msgId)
     return Message.Data
 }
 
@@ -54,14 +45,8 @@ async function testGetDataById(dataId: string, dataProviderWallet: DataProviderW
         "process": DATA_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 
 export async function testAllData(dataStatus: DataStatus, dataProviderWallet: DataProviderWallet) {
@@ -80,14 +65,8 @@ export async function testAllData(dataStatus: DataStatus, dataProviderWallet: Da
         "process": DATA_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 
 export async function testDelete(dataId: string, dataProviderWallet: DataProviderWallet) {
@@ -106,14 +85,8 @@ export async function testDelete(dataId: string, dataProviderWallet: DataProvide
         "process": DATA_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 export async function main() {
     let dataProviderWallet = await getDataProviderWallet();

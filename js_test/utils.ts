@@ -3,6 +3,7 @@ import {createDataItemSigner} from "@permaweb/aoconnect"
 import Arweave from "arweave"
 
 type WalletKind = "DataProvider" | "ComputationProvider" | "ResultReceiver";
+type FilterMessageType = "FilterMessageId" | "FilterMessageTarget"
 
 export interface DataProviderWallet {
     kind: "DataProvider";
@@ -83,17 +84,40 @@ export const getTag = (Message: any, Tag: string) => {
     }
     return null
 }
-export async function getExpectedMessage(Messages: any[], address: string) {
-    console.log("address ", address)
-    // console.log("messages ", Messages)
-    let targets = []
-    for (let msg of Messages) {
-        targets.push(msg.Target)
-        if (msg.Target === address) {
-            return msg;
+function filterMessageId(msgId: string) {
+    return (msg: any) => {
+        let mid = getTag(msg, "Message-Id")
+        if (mid != null  && mid === msgId) {
+            let errorTag = getTag(msg, "Error")
+            if (errorTag) {
+                throw errorTag
+            }
+            return true
         }
+        return false
     }
-    console.log(targets)
-    return null
 }
 
+function filterMessageTarget(target: string) {
+    return (msg: any) => {
+        return msg.Target === target
+    }
+}
+export async function getMessage(Result: any, msgIdOrTarget: string, filterType: FilterMessageType = "FilterMessageId") {
+    let filterFn = filterMessageId(msgIdOrTarget)
+    if (filterType == "FilterMessageTarget") {
+        filterFn = filterMessageTarget(msgIdOrTarget)
+    }
+    if (Result.Error) {
+        throw Result.Error
+    }
+    for (let msg of Result.Messages) {
+        if (filterFn(msg)) {
+            return msg
+        }
+    }
+    for (let msg of Result.Messages) {
+        console.log(msg)
+    }
+    throw msgIdOrTarget + " not found"
+}
