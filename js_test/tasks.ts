@@ -329,6 +329,7 @@ async function testWithdraw(quantity: string, resultWallet: ResultReceiverWallet
         "tags": [
             {"name": "Action", "value": action},
             {"name": "Quantity", "value": quantity},
+            {"name": "PriceSymbol", "value": "AOCRED"},
         ]
     });
     let Result = await result({
@@ -440,12 +441,13 @@ async function main() {
 
     await sleep(5000)
 
-    let pendingTasks = await testGetPendingTasks(computeWallet)
-    let pendingTasks2 = JSON.parse(pendingTasks)
+    // let pendingTasks = await testGetPendingTasks(computeWallet)
+    // let pendingTasks2 = JSON.parse(pendingTasks)
     let taskIds = []
-    for (const theTask of pendingTasks2) {
-        taskIds.push(theTask.id)
-    }
+    // for (const theTask of pendingTasks2) {
+    //     taskIds.push(theTask.id)
+    // }
+    taskIds.push(taskId)
     console.log("taskIds ", taskIds)
 
     for (const taskId of taskIds) {

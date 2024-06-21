@@ -460,10 +460,10 @@ Handlers.add(
 )
 function completeTask(taskKey)
   local theTask = PendingTasks[taskKey]
+  local allowanceKey = getAllowanceKey(theTask.from, theTask.priceSymbol)
   local tokenProcessId = getTokenProcessId(theTask.priceSymbol)
   local transferedTokens = tostring(0)
   for nodeName, _ in pairs(theTask.result) do
-      local allowanceKey = getAllowanceKey(theTask.from, theTask.priceSymbol)
       local recipient = theTask.tokenRecipients[nodeName]
 
       LockedAllowances[allowanceKey] = tostring(bint.__sub(LockedAllowances[allowanceKey], tostring(COMPUTATION_PRICE[theTask.priceSymbol])))
