@@ -176,7 +176,7 @@ Handlers.add(
     local nodeName = msg.Tags.Name
     for nodeKey, data in pairs(AllData) do
       if data.isValid then
-        if indexOf(data.computeNodes, nodeName) ~= nil then
+        if indexOf(data.computeNodes, nodeName) ~= 0 then
           AllData[nodeKey].isValid = false
         end
       end

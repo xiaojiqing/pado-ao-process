@@ -1,6 +1,6 @@
 import {message, result} from "@permaweb/aoconnect"
 import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
-import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getDataProviderWallet, getComputationProviderWallet, getResultReceiverWallet, getTag, getExpectedMessage} from "./utils"
+import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getDataProviderWallet, getComputationProviderWallet, getResultReceiverWallet, getMessage} from "./utils"
 import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
 import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
 
@@ -24,15 +24,55 @@ async function testComputationPrice(resultReceiverWallet: ResultReceiverWallet) 
         "process": TASK_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
+}
+async function testNotice(wallet: Wallet) {
+    let action = "Notice"
+
+    let msgId = await message({
+        "process": TASK_PROCESS,
+        "signer": wallet.signer,
+        "tags": [
+            {"name": "Action", "value": action},
+        ]
+    });
+
+    let Result = await result({
+        "process": TASK_PROCESS,
+        "message": msgId,
+    })
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
+}
+interface NoticeItem {
+    quantity: string;
+    timestamp: number;
+}
+interface Notice {
+    credit: NoticeItem[];
+    debit: NoticeItem[];
+}
+function printNotice(msg:string, {credit, debit}: Notice) {
+    console.log(msg)
+    if (credit.length > 0) {
+        for (let c of credit) {
+            console.log("credit", (new Date(c.timestamp)).toString(), c.quantity)
+        }
     }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
+    if (debit.length > 0) {
+        for (let d of debit) {
+            console.log("debit", (new Date(d.timestamp)).toString(), d.quantity)
+        }
     }
-    console.log("computation price: ", Messages[0].Data)
-    return Messages[0].Data
+}
+async function testAllNotice(dataWallet: DataProviderWallet, computeWallet: ComputationProviderWallet, resultWallet: ResultReceiverWallet) {
+    let dataNotice = await testNotice(dataWallet)
+    let computeNotice = await testNotice(computeWallet)
+    let resultNotice = await testNotice(resultWallet)
+    printNotice("data notice", JSON.parse(dataNotice))
+    printNotice("compute notice", JSON.parse(computeNotice))
+    printNotice("result notice", JSON.parse(resultNotice))
 }
 async function testReportTimeout(resultReceiverWallet: ResultReceiverWallet) {
     let action = "ReportTimeout"
@@ -49,15 +89,8 @@ async function testReportTimeout(resultReceiverWallet: ResultReceiverWallet) {
         "process": TASK_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    console.log("report timeout: ", Messages[0].Data)
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 async function testCheckReportTimeout(resultReceiverWallet: ResultReceiverWallet) {
     let action = "CheckReportTimeout"
@@ -74,13 +107,7 @@ async function testCheckReportTimeout(resultReceiverWallet: ResultReceiverWallet
         "process": TASK_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Message = await getExpectedMessage(Result.Messages, resultReceiverWallet.address)
-    if (getTag(Message, "Error")) {
-        throw getTag(Message, "Error")
-    }
+    let Message = await getMessage(Result, msgId)
     console.log("check report timeout: ", Message.Data)
     return Message.Data
 }
@@ -102,14 +129,8 @@ async function transferToken(recipient: string, quantity: string, wallet: Wallet
         "process": TOKEN_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    console.log("transfer result: ", Messages[0].Data)
+    let Message = await getMessage(Result, wallet.address, "FilterMessageTarget")
+    return Message.Data
 }
 
 async function transferTokenToTask(quantity: string, resultReceiverWallet: ResultReceiverWallet) {
@@ -152,20 +173,9 @@ async function testSubmit(dataId: string, nodes: string[], resultReceiverWallet:
         "process": TASK_PROCESS,
         "message": msgId,
     });
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
     
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    for (const msg of Messages) {
-        if (msg.Target === resultReceiverWallet.address) {
-            return msg.Data
-        }
-    }
-    return null;
 }
 
 async function testGetTasks(action: string, wallet: Wallet) {
@@ -181,13 +191,7 @@ async function testGetTasks(action: string, wallet: Wallet) {
         "process": TASK_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Message = await getExpectedMessage(Result.Messages, wallet.address)
-    if (getTag(Message, "Error")) {
-        throw getTag(Message, "Error")
-    }
+    let Message = await getMessage(Result, msgId)
     return Message.Data
 }
 
@@ -223,14 +227,8 @@ async function testGetCompletedTaskById(taskId: string, resultReceiverWallet: Re
         "process": TASK_PROCESS,
         "message": msgId,
     })
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 
 async function testReportResult(node:string, taskId:string, computeWallet: ComputationProviderWallet) {
@@ -252,20 +250,7 @@ async function testReportResult(node:string, taskId:string, computeWallet: Compu
         "process": TASK_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    let Message = await getExpectedMessage(Messages, computeWallet.address)
-    if (Message == null) {
-        for (let msg of Messages) {
-            console.log(msg)
-            console.log(msg.Tags)
-        }
-    }
-    if (getTag(Message, "Error")) {
-        throw getTag(Message, "Error")
-    }
+    let Message = await getMessage(Result, msgId)
     return Message.Data
 }
 async function testReportAllResult(taskId: string, computeWallet: ComputationProviderWallet) {
@@ -297,16 +282,8 @@ async function testBalance(address: string, wallet: Wallet) {
         "process": TOKEN_PROCESS,
         "message": msgId,
     });
-
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    console.log("Balance: ", Messages[0].Data)
-    return Messages[0].Data
+    let Message = await getMessage(Result, wallet.address, "FilterMessageTarget")
+    return Message.Data
 }
 
 async function testWalletBalance(wallet: Wallet) {
@@ -329,16 +306,8 @@ async function testAllowance(resultReceiverWallet: ResultReceiverWallet) {
         "process": TASK_PROCESS,
         "message": msgId,
     });
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    // console.log(Messages)
-    console.log("allowance: ", Messages[0].Data)
-    return Messages[0].Data
+    let Message = await getMessage(Result, msgId)
+    return Message.Data
 }
 async function testWithdraw(quantity: string, resultWallet: ResultReceiverWallet) {
     let action = "Withdraw"
@@ -355,14 +324,7 @@ async function testWithdraw(quantity: string, resultWallet: ResultReceiverWallet
         "process": TASK_PROCESS,
         "message": msgId,
     })
-    if (Result.Error) {
-        console.log(Result.Error)
-    }
-    let Messages = Result.Messages
-    if (getTag(Messages[0], "Error")) {
-        throw getTag(Messages[0], "Error")
-    }
-    let Message = await getExpectedMessage(Messages, resultWallet.address)
+    let Message = await getMessage(Result, msgId)
     console.log("withdraw: ", Message.Data)
     return Message.Data
 }
@@ -502,6 +464,7 @@ async function main() {
     await testWalletBalance(resultWallet)
     await testBalance(TASK_PROCESS, resultWallet)
     await testAllowance(resultWallet)
+    await testAllNotice(dataWallet, computeWallet, resultWallet)
 
     return "finished"
 }

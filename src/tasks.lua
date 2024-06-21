@@ -54,18 +54,20 @@ end
 
 function checkReportTimeout(now)
   for taskId, task in pairs(PendingTasks) do
-    if now - task.startTimestamp > REPORT_TIMEOUT then
-      if task.reportCount >= task.threshold then
-        completeTask(taskId)
-      else
-        LockedAllowances[task.from] = tostring(bint.__sub(LockedAllowances[task.from], task.requiredTokens))
-        FreeAllowances[task.from] = tostring(bint.__add(FreeAllowances[task.from], task.requiredTokens))
-        
-        local verificationError = "not enough compute nodes report result"
-        PendingTasks[taskId].verificationError = verificationError
-        PendingTasks[taskId].msg = nil
-        CompletedTasks[taskId] = PendingTasks[taskId]
-        PendingTasks[taskId] = nil
+    if task.nodeVerified and task.dataVerified then
+      if now - task.startTimestamp > REPORT_TIMEOUT then
+        if task.reportCount >= task.threshold then
+          completeTask(taskId)
+        else
+          LockedAllowances[task.from] = tostring(bint.__sub(LockedAllowances[task.from], task.requiredTokens))
+          FreeAllowances[task.from] = tostring(bint.__add(FreeAllowances[task.from], task.requiredTokens))
+          
+          local verificationError = "not enough compute nodes report result"
+          PendingTasks[taskId].verificationError = verificationError
+          PendingTasks[taskId].msg = nil
+          CompletedTasks[taskId] = PendingTasks[taskId]
+          PendingTasks[taskId] = nil
+        end
       end
     end
   end
@@ -103,7 +105,9 @@ Handlers.add(
     local sender = msg.Sender
     local quantity = msg.Quantity
 
-    local creditNotice = "Receive " .. quantity .. " tokens from " .. sender
+    local creditNotice = {}
+    creditNotice["quantity"] = quantity
+    creditNotice["timestamp"] = msg.Timestamp
     CreditNotice[sender] = CreditNotice[sender] or {}
     table.insert(CreditNotice[sender], creditNotice)
 
@@ -119,13 +123,39 @@ Handlers.add(
     local recipient = msg.Recipient
     local quantity = msg.Quantity
 
-    local debitNotice =  "Send " .. quantity .. " token to ".. recipient 
+    local debitNotice =  {}
+    debitNotice["quantity"] = quantity
+    debitNotice["timestamp"] = msg.Timestamp 
     DebitNotice[recipient] = DebitNotice[recipient] or {}
     table.insert(DebitNotice[recipient], debitNotice)
     
     -- print("report result " .. quantity .. " tokens")
   end
 ) 
+
+Handlers.add(
+  "notice",
+  Handlers.utils.hasMatchingTag("Action", "Notice"),
+  function (msg)
+    local target = msg.From
+    if msg.Address ~= nil then
+      target = msg.Address
+    end
+
+    local notice = {}
+    notice["credit"] = {}
+    notice["debit"] = {}
+    if CreditNotice[target] ~= nil then
+      notice["credit"] = CreditNotice[target]
+    end
+
+    if DebitNotice[target] ~= nil then
+      notice["debit"] = DebitNotice[target]
+    end
+
+    replySuccess(msg, notice)
+  end
+)
 
 Handlers.add(
   "transferError",

@@ -7,7 +7,7 @@ function indexOf(list, item)
       return index
     end
   end
-  return nil
+  return 0 
 end
 
 function replyError(request, errmsg)
