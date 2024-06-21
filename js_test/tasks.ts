@@ -17,6 +17,7 @@ async function testComputationPrice(resultReceiverWallet: ResultReceiverWallet) 
         "signer": resultReceiverWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
+            {"name": "PriceSymbol", "value": "AOCRED"},
         ]
     });
 
@@ -56,11 +57,19 @@ interface Notice {
 function printNotice(msg:string, {credit, debit}: Notice) {
     console.log(msg)
     if (credit.length > 0) {
+        if (credit.length > 5) {
+            let length = credit.length
+            credit = credit.slice(length - 5, length)
+        }
         for (let c of credit) {
             console.log("credit", (new Date(c.timestamp)).toString(), c.quantity)
         }
     }
     if (debit.length > 0) {
+        if (debit.length > 5) {
+            let length = debit.length
+            debit = debit.slice(length - 5, length)
+        }
         for (let d of debit) {
             console.log("debit", (new Date(d.timestamp)).toString(), d.quantity)
         }
@@ -130,6 +139,7 @@ async function transferToken(recipient: string, quantity: string, wallet: Wallet
         "message": msgId,
     });
     let Message = await getMessage(Result, wallet.address, "FilterMessageTarget")
+    console.log(Message.Data)
     return Message.Data
 }
 
@@ -300,6 +310,7 @@ async function testAllowance(resultReceiverWallet: ResultReceiverWallet) {
         "signer": resultReceiverWallet.signer,
         "tags": [
             {"name": "Action", "value": action},
+            {"name": "PriceSymbol", "value": "AOCRED"},
         ]
     });
     let Result = await result({
@@ -404,6 +415,7 @@ async function main() {
     await registerAllNodes(nodes, computeWallet);
 
     let registeredNodes = await testGetAllNodes(computeWallet)
+    console.log(registeredNodes)
     let allNodes = JSON.parse(registeredNodes)
     nodes = []
     indices = []
@@ -413,13 +425,16 @@ async function main() {
     }
 
     let dataId = await registerData(nodes, indices, dataWallet)
+    console.log("dataId", dataId)
 
     await transferTokenToTask("5", resultWallet)
+    console.log("transferTokentoTaks")
 
     // clearInfo = {"whiteList": false, "node": true, "data": false}
     // await clear(clearInfo, signer)
     await sleep(5000)
 
+    console.log("submit task")
     let taskId = await testSubmit(dataId, nodes, resultWallet)
     console.log(`task id: ${taskId}`)
 
@@ -437,7 +452,6 @@ async function main() {
         await testReportAllResult(taskId, computeWallet)
         await sleep(5000)
     }
-
     await testCheckReportTimeout(resultWallet)
     
     if (false) {

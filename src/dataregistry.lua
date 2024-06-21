@@ -1,5 +1,22 @@
 AllData = AllData or {}
 PendingData = PendingData or {}
+PriceSymbols = PriceSymbols or {}
+
+function initDataRegistryEnvironment()
+  if indexOf(PriceSymbols, "AOCRED") == 0 then
+    table.insert(PriceSymbols, "AOCRED")
+  end
+
+  if indexOf(PriceSymbols, "wAR") == 0 then
+    table.insert(PriceSymbols, "wAR")
+  end
+end
+
+function isPriceSymbolSupported(symbol)
+  return indexOf(PriceSymbols, symbol) > 0
+end
+
+initDataRegistryEnvironment()
 
 function getInitialDataKey(msg)
   return msg.Id
@@ -29,7 +46,7 @@ Handlers.add(
       elseif dataPrice.symbol == nil then
         replyError(msg, "symbol is missing")
         return
-      elseif dataPrice.symbol ~= "AOCRED" then
+      elseif not isPriceSymbolSupported(dataPrice.symbol) then
         replyError(msg, "incorrect price symbol")
         return
       end
