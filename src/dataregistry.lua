@@ -1,5 +1,24 @@
 AllData = AllData or {}
 PendingData = PendingData or {}
+PriceSymbols = PriceSymbols or {}
+
+local json = require("json")
+
+function initDataRegistryEnvironment()
+  if indexOf(PriceSymbols, "AOCRED") == 0 then
+    table.insert(PriceSymbols, "AOCRED")
+  end
+
+  if indexOf(PriceSymbols, "wAR") == 0 then
+    table.insert(PriceSymbols, "wAR")
+  end
+end
+
+function isPriceSymbolSupported(symbol)
+  return indexOf(PriceSymbols, symbol) > 0
+end
+
+initDataRegistryEnvironment()
 
 function getInitialDataKey(msg)
   return msg.Id
@@ -22,14 +41,14 @@ Handlers.add(
       replyError(msg, "Price is required")
       return
     else
-      local dataPrice = require("json").decode(msg.Tags.Price)
+      local dataPrice = json.decode(msg.Tags.Price)
       if dataPrice.price == nil then
         replyError(msg, "price is missing")
         return
       elseif dataPrice.symbol == nil then
         replyError(msg, "symbol is missing")
         return
-      elseif dataPrice.symbol ~= "AOCRED" then
+      elseif not isPriceSymbolSupported(dataPrice.symbol) then
         replyError(msg, "incorrect price symbol")
         return
       end
@@ -41,7 +60,7 @@ Handlers.add(
       return
     end
 
-    local policy = require("json").decode(msg.Data).policy
+    local policy = json.decode(msg.Data).policy
     local computeNodes = policy.names
     local indices = policy.indices
     if #computeNodes ~= #indices then
@@ -59,7 +78,7 @@ Handlers.add(
     PendingData[dataKey].isValid = true
     PendingData[dataKey].registeredTimestamp = msg.Timestamp
 
-    local computeNodeStr = require("json").encode(computeNodes)
+    local computeNodeStr = json.encode(computeNodes)
 
     ao.send({Target = NODE_PROCESS_ID, Tags = {Action = "GetComputeNodes", ComputeNodes = computeNodeStr, UserData = dataKey}}) 
     replySuccess(msg, msg.Id)
@@ -70,7 +89,7 @@ Handlers.add(
   "getComputeNodesSuccess",
   Handlers.utils.hasMatchingTag("Action", "GetComputeNodes-Success"),
   function (msg)
-    local dataMap = require("json").decode(msg.Data)
+    local dataMap = json.decode(msg.Data)
     local dataKey = dataMap.userData
     AllData[dataKey] = PendingData[dataKey]
     PendingData[dataKey] = nil
@@ -81,7 +100,7 @@ Handlers.add(
   "getComputeNodesError",
   Handlers.utils.hasMatchingTag("Action", "GetComputeNodes-Error"),
   function (msg)
-    local errorMap = require("json").decode(msg.Tags.Error)
+    local errorMap = json.decode(msg.Tags.Error)
     local dataKey = errorMap.userData
     PendingData[dataKey] = nil
   end

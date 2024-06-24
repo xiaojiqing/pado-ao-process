@@ -109,6 +109,7 @@ export async function getMessage(Result: any, msgIdOrTarget: string, filterType:
         filterFn = filterMessageTarget(msgIdOrTarget)
     }
     if (Result.Error) {
+        console.log(Result)
         throw Result.Error
     }
     for (let msg of Result.Messages) {
