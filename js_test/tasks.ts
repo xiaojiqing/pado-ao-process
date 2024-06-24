@@ -1,8 +1,10 @@
 import {message, result} from "@permaweb/aoconnect"
-import {TOKEN_PROCESS, TASK_PROCESS} from "./constants"
+import {WAR_PROCESS, AOCRED_PROCESS, TASK_PROCESS} from "./constants"
 import {Wallet, DataProviderWallet, ComputationProviderWallet, ResultReceiverWallet, getDataProviderWallet, getComputationProviderWallet, getResultReceiverWallet, getMessage} from "./utils"
 import {testRegistry as registerData, testAllData, testDelete as deleteData} from "./dataregistry"
 import {registerAllNodes, testGetAllNodes, deleteAllNodes, testAddWhiteList, testGetWhiteList, testRemoveWhiteList} from "./noderegistry"
+
+let TOKEN_PROCESS = WAR_PROCESS
 
 interface ClearInfo {
     whiteList: boolean,
@@ -391,6 +393,22 @@ function sleep(ms: number) {
 }
 
 async function main() {
+    let args = process.argv.slice(2)
+    if (args.length !== 1) {
+        console.log("node tasks.js <WAR|AOCRED>")
+        throw "wrong arguments"
+    }
+    let priceSymbol = args[0].toUpperCase()
+    if (priceSymbol == "WAR") {
+        TOKEN_PROCESS = WAR_PROCESS
+    }
+    else if (priceSymbol == "AOCRED") {
+        TOKEN_PROCESS = AOCRED_PROCESS
+    }
+    else {
+        throw "wrong arguments: " + priceSymbol
+    }
+    console.log(priceSymbol, TOKEN_PROCESS)
     const dataWallet = await getDataProviderWallet()
     const computeWallet = await getComputationProviderWallet()
     const resultWallet = await getResultReceiverWallet()
