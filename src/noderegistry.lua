@@ -3,6 +3,8 @@ Nodes = Nodes or {}
 WhiteList = WhiteList or {}
 NodeIndex = NodeIndex or 0
 
+local json = require("json")
+
 function getNodeKey(msg)
   return msg.Tags.Name
 end
@@ -200,7 +202,7 @@ Handlers.add(
   "getComputeNodes",
   Handlers.utils.hasMatchingTag("Action", "GetComputeNodes"),
   function (msg)
-    local computeNodes = require("json").decode(msg.Tags.ComputeNodes)
+    local computeNodes = json.decode(msg.Tags.ComputeNodes)
     local computeNodeMap = {}
     for _, nodeName in ipairs(computeNodes) do
       if Nodes[nodeName] == nil then

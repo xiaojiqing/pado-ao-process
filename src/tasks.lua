@@ -44,6 +44,7 @@ end
 initTaskEnvironment()
 
 local bint = require('.bint')(256)
+local json = require("json")
 
 function getInitialTaskKey(msg)
   return msg.Id
@@ -63,22 +64,6 @@ function getTaskList(tasks)
     table.insert(result, task)
   end
   return result
-end
-
-function convertToMap(list)
-  local m = {}
-  for index, item in ipairs(list) do
-    m[item] = index
-  end
-  return m
-end
-
-function count(map)
-  local num = 0
-  for _, _ in pairs(map) do
-    num = num + 1
-  end
-  return num
 end
 
 function calculateRequiredTokens(computeNodeCount, dataPrice, priceSymbol)
@@ -306,7 +291,7 @@ Handlers.add(
     --   replyError(msg, "Please transfer sufficient token to " .. ao.id)
     --   return
     -- end
-    local computeNodes = require("json").decode(msg.Tags.ComputeNodes)
+    local computeNodes = json.decode(msg.Tags.ComputeNodes)
     local computeNodeCount = #computeNodes
 
     local taskKey = getInitialTaskKey(msg)
@@ -337,8 +322,8 @@ Handlers.add(
   "getComputeNodesSuccess",
   Handlers.utils.hasMatchingTag("Action", "GetComputeNodes-Success"),
   function (msg)
-    local dataMap = require("json").decode(msg.Data)
-    local dataMap2 = require("json").decode(msg.Data)
+    local dataMap = json.decode(msg.Data)
+    local dataMap2 = json.decode(msg.Data)
     local taskKey = dataMap.userData
     local computeNodeMap = dataMap.data
     local tokenRecipients = dataMap2.data
@@ -377,7 +362,7 @@ Handlers.add(
   "getComputeNodesError",
   Handlers.utils.hasMatchingTag("Action", "GetComputeNodes-Error"),
   function (msg)
-    local errorMap = require("json").decode(msg.Tags.Error)
+    local errorMap = json.decode(msg.Tags.Error)
     local taskKey = errorMap.userData
     local errorMsg = errorMap.errorMsg
     if PendingTasks[taskKey] ~= nil then
@@ -398,11 +383,11 @@ Handlers.add(
   "getDataByIdSuccess",
   Handlers.utils.hasMatchingTag("Action", "GetDataById-Success"),
   function (msg)
-    local dataMap = require("json").decode(msg.Data)
+    local dataMap = json.decode(msg.Data)
     local taskKey = dataMap.userData
     local data = dataMap.data
-    local dataPrice = require("json").decode(data.price)
-    local policy = require("json").decode(data.data).policy
+    local dataPrice = json.decode(data.price)
+    local policy = json.decode(data.data).policy
     local originMsg = PendingTasks[taskKey].msg
     local computeNodeCount = PendingTasks[taskKey].computeNodeCount
     local spender = PendingTasks[taskKey].from
@@ -442,7 +427,7 @@ Handlers.add(
   "getDataByIdError",
   Handlers.utils.hasMatchingTag("Action", "GetDataById-Error"),
   function (msg)
-    local errorMap = require("json").decode(msg.Tags.Error)
+    local errorMap = json.decode(msg.Tags.Error)
     local taskKey = errorMap.userData
     local errorMsg = errorMap.errorMsg
     if PendingTasks[taskKey] ~= nil then
