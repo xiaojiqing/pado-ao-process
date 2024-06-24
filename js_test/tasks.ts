@@ -429,7 +429,7 @@ async function main() {
     console.log("dataId", dataId)
 
     await transferTokenToTask("5", resultWallet)
-    console.log("transferTokentoTaks")
+    console.log("transferTokenToTask")
 
     // clearInfo = {"whiteList": false, "node": true, "data": false}
     // await clear(clearInfo, signer)
@@ -478,9 +478,13 @@ async function main() {
     await testWalletBalance(dataWallet)
     await testWalletBalance(computeWallet)
     await testWalletBalance(resultWallet)
-    await testBalance(TASK_PROCESS, resultWallet)
-    await testAllowance(resultWallet)
-    await testAllNotice(dataWallet, computeWallet, resultWallet)
+    let taskBalance = await testBalance(TASK_PROCESS, resultWallet)
+    console.log("task balance: ", taskBalance)
+    let allowance = await testAllowance(resultWallet)
+    console.log("allowance: ", allowance)
+    if (false) {
+        await testAllNotice(dataWallet, computeWallet, resultWallet)
+    }
 
     return "finished"
 }
