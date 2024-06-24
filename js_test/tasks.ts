@@ -398,11 +398,11 @@ async function main() {
         console.log("node tasks.js <WAR|AOCRED>")
         throw "wrong arguments"
     }
-    let priceSymbol = args[0].toUpperCase()
-    if (priceSymbol == "WAR") {
+    let priceSymbol = args[0]
+    if (priceSymbol.toUpperCase() == "WAR") {
         TOKEN_PROCESS = WAR_PROCESS
     }
-    else if (priceSymbol == "AOCRED") {
+    else if (priceSymbol.toUpperCase() == "AOCRED") {
         TOKEN_PROCESS = AOCRED_PROCESS
     }
     else {
@@ -443,7 +443,7 @@ async function main() {
         indices.push(allNodes[i].index)
     }
 
-    let dataId = await registerData(nodes, indices, dataWallet)
+    let dataId = await registerData(nodes, indices, dataWallet, priceSymbol)
     console.log("dataId", dataId)
 
     await transferTokenToTask("5", resultWallet)

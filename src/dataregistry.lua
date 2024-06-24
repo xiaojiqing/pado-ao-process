@@ -49,7 +49,7 @@ Handlers.add(
         replyError(msg, "symbol is missing")
         return
       elseif not isPriceSymbolSupported(dataPrice.symbol) then
-        replyError(msg, "incorrect price symbol")
+        replyError(msg, "incorrect price symbol: " .. dataPrice.symbol)
         return
       end
     end

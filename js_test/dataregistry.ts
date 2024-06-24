@@ -4,10 +4,10 @@ import {getDataProviderWallet, DataProviderWallet, getMessage} from "./utils"
 
 export type DataStatus = "Valid" | "Invalid" | "All"
 
-export async function testRegistry(nodes: string[], indices: number[], dataProviderWallet: DataProviderWallet) {
+export async function testRegistry(nodes: string[], indices: number[], dataProviderWallet: DataProviderWallet, priceSymbol: string) {
     let action = "Register"
     let dataTag = Date() 
-    let price = JSON.stringify({"price": 1, "symbol": "AOCRED"})
+    let price = JSON.stringify({"price": 1, "symbol": priceSymbol})
     let data = JSON.stringify({"policy": {"t": 2, "n": 3, "indices": indices, "names": nodes}})
 
     let msgId = await message({
@@ -93,7 +93,7 @@ export async function main() {
     let nodes = ["js_aos1", "js_aos2", "js_aos3"]
     let indices = [1, 2, 3]
 
-    let dataId = await testRegistry(nodes, indices, dataProviderWallet)
+    let dataId = await testRegistry(nodes, indices, dataProviderWallet, "AOCRED")
     console.log("dataId: ", dataId)
 
     let res = await testGetDataById(dataId, dataProviderWallet)
